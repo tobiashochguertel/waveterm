@@ -1,0 +1,163 @@
+name: Sync Upstream & Apply Fix
+
+on:
+  schedule:
+    # Check for new upstream releases daily at 07:00 UTC
+    - cron: "0 7 * * *"
+  workflow_dispatch:
+    inputs:
+      upstream_ref:
+        description: "Upstream ref to merge (tag, branch, or SHA). Leave blank to use upstream/main."
+        required: false
+        default: ""
+      force:
+        description: "Force sync even if already up to date"
+        required: false
+        default: "false"
+        type: boolean
+
+jobs:
+  sync-upstream:
+    name: Sync upstream wavetermdev/waveterm → fork main
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout fork main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Add upstream remote
+        run: |
+          git remote add upstream https://github.com/wavetermdev/waveterm.git || true
+          git fetch upstream --tags --quiet
+
+      - name: Determine upstream ref to merge
+        id: upstream-ref
+        run: |
+          INPUT_REF="${{ github.event.inputs.upstream_ref }}"
+          if [[ -n "$INPUT_REF" ]]; then
+            MERGE_REF="$INPUT_REF"
+          else
+            # Find latest upstream release tag (vX.Y.Z, no pre-release)
+            LATEST_TAG=$(git tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+            MERGE_REF="${LATEST_TAG:-upstream/main}"
+          fi
+          echo "merge_ref=$MERGE_REF" >> "$GITHUB_OUTPUT"
+          echo "Merging: $MERGE_REF"
+
+      - name: Check if already up to date
+        id: check-uptodate
+        run: |
+          MERGE_REF="${{ steps.upstream-ref.outputs.merge_ref }}"
+          UPSTREAM_SHA=$(git rev-parse "refs/tags/$MERGE_REF" 2>/dev/null || git rev-parse "$MERGE_REF")
+          FORK_SHA=$(git rev-parse HEAD)
+
+          # Check if upstream is already an ancestor of HEAD
+          if git merge-base --is-ancestor "$UPSTREAM_SHA" HEAD; then
+            if [[ "${{ github.event.inputs.force }}" != "true" ]]; then
+              echo "up_to_date=true" >> "$GITHUB_OUTPUT"
+              echo "Fork main already contains $MERGE_REF — nothing to do."
+            else
+              echo "up_to_date=false" >> "$GITHUB_OUTPUT"
+              echo "Force flag set — proceeding anyway."
+            fi
+          else
+            echo "up_to_date=false" >> "$GITHUB_OUTPUT"
+            echo "Upstream has new commits to merge."
+          fi
+
+      - name: Merge upstream ref into main
+        if: steps.check-uptodate.outputs.up_to_date != 'true'
+        run: |
+          MERGE_REF="${{ steps.upstream-ref.outputs.merge_ref }}"
+          git merge "$MERGE_REF" \
+            --no-edit \
+            -m "chore: merge upstream $MERGE_REF into main [skip ci]" \
+            --strategy-option=theirs 2>&1 || {
+            echo "Merge failed — attempting with default strategy"
+            git merge --abort 2>/dev/null || true
+            git merge "$MERGE_REF" --no-edit \
+              -m "chore: merge upstream $MERGE_REF into main [skip ci]"
+          }
+
+      - name: Re-apply xterm macOptionClickForcesSelection fix
+        if: steps.check-uptodate.outputs.up_to_date != 'true'
+        run: |
+          TERM_TSX="frontend/app/view/term/term.tsx"
+          if [[ ! -f "$TERM_TSX" ]]; then
+            echo "⚠️  $TERM_TSX not found — skipping xterm fix"
+            exit 0
+          fi
+
+          if grep -q "macOptionClickForcesSelection: termMacOptionIsMeta" "$TERM_TSX"; then
+            echo "✅ xterm fix already present in $TERM_TSX"
+            exit 0
+          fi
+
+          python3 - << 'PYEOF'
+          import sys
+          path = "frontend/app/view/term/term.tsx"
+          with open(path) as f:
+              content = f.read()
+          OLD = "                macOptionIsMeta: termMacOptionIsMeta,"
+          NEW = """                macOptionIsMeta: termMacOptionIsMeta,
+                  // When macOptionIsMeta is enabled, also set macOptionClickForcesSelection=true.
+                  // Without this, xterm.js still activates column-select mode (crosshair cursor)
+                  // when holding Option, because shouldColumnSelect() checks
+                  // macOptionClickForcesSelection independently of macOptionIsMeta.
+                  // See: xterm.js SelectionService.ts#shouldColumnSelect()
+                  macOptionClickForcesSelection: termMacOptionIsMeta,"""
+          if OLD not in content:
+              print(f"Pattern not found in {path} — the file structure may have changed.")
+              sys.exit(1)
+          patched = content.replace(OLD, NEW, 1)
+          with open(path, "w") as f:
+              f.write(patched)
+          print(f"✅ Patched {path}")
+          PYEOF
+
+          git add "$TERM_TSX"
+          git commit -m "fix(term): disable crosshair cursor when macOptionIsMeta is enabled
+
+          When term:macoptionismeta is set to true, xterm.js still activates
+          column-select mode (crosshair cursor) on Option key hold because
+          shouldColumnSelect() checks macOptionClickForcesSelection independently
+          of macOptionIsMeta.
+
+          Co-authored-by: Tobias Hochgürtel <tobias.hochguertel@googlemail.com>
+          Co-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
+
+      - name: Push updated main
+        if: steps.check-uptodate.outputs.up_to_date != 'true'
+        run: |
+          git push origin main
+
+      - name: Create summary
+        run: |
+          MERGE_REF="${{ steps.upstream-ref.outputs.merge_ref }}"
+          UP_TO_DATE="${{ steps.check-uptodate.outputs.up_to_date }}"
+          if [[ "$UP_TO_DATE" == "true" ]]; then
+            echo "## ✅ Already up to date" >> "$GITHUB_STEP_SUMMARY"
+            echo "Fork main already contains $MERGE_REF." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "## ✅ Sync complete" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Merged: \`$MERGE_REF\`" >> "$GITHUB_STEP_SUMMARY"
+            echo "- xterm macOptionClickForcesSelection fix applied" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "To update your local installation:" >> "$GITHUB_STEP_SUMMARY"
+            echo "\`\`\`sh" >> "$GITHUB_STEP_SUMMARY"
+            echo "mise use -g github-wavetermdev-waveterm@latest" >> "$GITHUB_STEP_SUMMARY"
+            echo "task update:waveterm-fixed" >> "$GITHUB_STEP_SUMMARY"
+            echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
+          fi
