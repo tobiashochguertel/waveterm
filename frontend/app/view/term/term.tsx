@@ -297,6 +297,11 @@ const TerminalView = ({ blockId, model }: ViewComponentProps<TermViewModel>) => 
                 allowProposedApi: true, // Required by @xterm/addon-search to enable search functionality and decorations
                 ignoreBracketedPasteMode: !termAllowBPM,
                 macOptionIsMeta: termMacOptionIsMeta,
+                // When macOptionIsMeta is enabled, also set macOptionClickForcesSelection=true.
+                // Without this, xterm.js still activates column-select mode (crosshair cursor) when
+                // holding Option, because shouldColumnSelect() checks macOptionClickForcesSelection
+                // independently of macOptionIsMeta. See: SelectionService.ts#shouldColumnSelect()
+                macOptionClickForcesSelection: termMacOptionIsMeta,
                 cursorStyle: termCursorStyle,
                 cursorBlink: termCursorBlink,
             },
