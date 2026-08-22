@@ -1,0 +1,1478 @@
+diff --git a/frontend/app/element/markdown-anchor.test.ts b/frontend/app/element/markdown-anchor.test.ts
+new file mode 100644
+index 00000000..bbf40582
+--- /dev/null
++++ b/frontend/app/element/markdown-anchor.test.ts
+@@ -0,0 +1,26 @@
++// Copyright 2026, Command Line Inc.
++// SPDX-License-Identifier: Apache-2.0
++
++import { describe, expect, it } from "vitest";
++import { pickCurrentAnchor } from "./markdown-anchor";
++
++describe("pickCurrentAnchor", () => {
++    it("returns null for empty", () => {
++        expect(pickCurrentAnchor([], 100)).toBeNull();
++    });
++    it("returns first when all below viewport", () => {
++        const items = [
++            { href: "#a", top: 50 },
++            { href: "#b", top: 120 },
++        ];
++        expect(pickCurrentAnchor(items, 0)).toBe("#a");
++    });
++    it("returns the last heading at/above viewport top", () => {
++        const items = [
++            { href: "#a", top: -30 },
++            { href: "#b", top: 10 },
++            { href: "#c", top: 200 },
++        ];
++        expect(pickCurrentAnchor(items, 12)).toBe("#b");
++    });
++});
+diff --git a/frontend/app/element/markdown-anchor.ts b/frontend/app/element/markdown-anchor.ts
+new file mode 100644
+index 00000000..a793dd77
+--- /dev/null
++++ b/frontend/app/element/markdown-anchor.ts
+@@ -0,0 +1,22 @@
++// Copyright 2026, Command Line Inc.
++// SPDX-License-Identifier: Apache-2.0
++
++type AnchorItem = { href: string; top: number };
++
++// 뷰포트 상단(0 기준 상대좌표)에 걸쳐 있거나 바로 위에 있는 마지막 heading을 고른다.
++function pickCurrentAnchor(items: AnchorItem[], viewportTop: number): string | null {
++    if (items == null || items.length == 0) {
++        return null;
++    }
++    const threshold = viewportTop + 4;
++    let current: string | null = null;
++    for (const item of items) {
++        if (item.top <= threshold) {
++            current = item.href;
++        }
++    }
++    return current ?? items[0].href;
++}
++
++export { pickCurrentAnchor };
++export type { AnchorItem };
+diff --git a/frontend/app/element/markdown.tsx b/frontend/app/element/markdown.tsx
+index 5ecc2528..9074c118 100644
+--- a/frontend/app/element/markdown.tsx
++++ b/frontend/app/element/markdown.tsx
+@@ -10,11 +10,11 @@ import {
+     transformBlocks,
+ } from "@/app/element/markdown-util";
+ import remarkMermaidToTag from "@/app/element/remark-mermaid-to-tag";
+-import { boundNumber, useAtomValueSafe, cn } from "@/util/util";
++import { boundNumber, cn, useAtomValueSafe } from "@/util/util";
+ import clsx from "clsx";
+ import { Atom } from "jotai";
+ import { OverlayScrollbarsComponent, OverlayScrollbarsComponentRef } from "overlayscrollbars-react";
+-import { useEffect, useMemo, useRef, useState } from "react";
++import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from "react";
+ import ReactMarkdown, { Components } from "react-markdown";
+ import rehypeHighlight from "rehype-highlight";
+ import rehypeRaw from "rehype-raw";
+@@ -24,6 +24,7 @@ import RemarkFlexibleToc, { TocItem } from "remark-flexible-toc";
+ import remarkGfm from "remark-gfm";
+ import { openLink } from "../store/global";
+ import { IconButton } from "./iconbutton";
++import { pickCurrentAnchor } from "./markdown-anchor";
+ import "./markdown.scss";
+ 
+ let mermaidInitialized = false;
+@@ -306,205 +307,253 @@ type MarkdownProps = {
+     fixedFontSizeOverride?: number;
+ };
+ 
+-const Markdown = ({
+-    text,
+-    textAtom,
+-    showTocAtom,
+-    style,
+-    className,
+-    contentClassName,
+-    resolveOpts,
+-    fontSizeOverride,
+-    fixedFontSizeOverride,
+-    scrollable = true,
+-    rehype = true,
+-    onClickExecute,
+-}: MarkdownProps) => {
+-    const textAtomValue = useAtomValueSafe<string>(textAtom);
+-    const tocRef = useRef<TocItem[]>([]);
+-    const showToc = useAtomValueSafe(showTocAtom) ?? false;
+-    const contentsOsRef = useRef<OverlayScrollbarsComponentRef>(null);
+-    const [focusedHeading, setFocusedHeading] = useState<string>(null);
+-
+-    // Ensure uniqueness of ids between MD preview instances.
+-    const [idPrefix] = useState<string>(crypto.randomUUID());
+-
+-    text = textAtomValue ?? text ?? "";
+-    const transformedOutput = transformBlocks(text);
+-    const transformedText = transformedOutput.content;
+-    const contentBlocksMap = transformedOutput.blocks;
++type MarkdownHandle = {
++    scrollToAnchor: (anchor: string) => boolean;
++    getCurrentAnchor: () => string | null;
++};
+ 
+-    useEffect(() => {
+-        if (focusedHeading && contentsOsRef.current && contentsOsRef.current.osInstance()) {
+-            const { viewport } = contentsOsRef.current.osInstance().elements();
+-            const heading = document.getElementById(idPrefix + focusedHeading.slice(1));
+-            if (heading) {
+-                const headingBoundingRect = heading.getBoundingClientRect();
+-                const viewportBoundingRect = viewport.getBoundingClientRect();
+-                const headingTop = headingBoundingRect.top - viewportBoundingRect.top;
+-                viewport.scrollBy({ top: headingTop });
++const Markdown = forwardRef<MarkdownHandle, MarkdownProps>(
++    (
++        {
++            text,
++            textAtom,
++            showTocAtom,
++            style,
++            className,
++            contentClassName,
++            resolveOpts,
++            fontSizeOverride,
++            fixedFontSizeOverride,
++            scrollable = true,
++            rehype = true,
++            onClickExecute,
++        },
++        ref
++    ) => {
++        const textAtomValue = useAtomValueSafe<string>(textAtom);
++        const tocRef = useRef<TocItem[]>([]);
++        const showToc = useAtomValueSafe(showTocAtom) ?? false;
++        const contentsOsRef = useRef<OverlayScrollbarsComponentRef>(null);
++        const scrollTopRef = useRef<number>(0);
++        const prevTextRef = useRef<string>(null);
++        const [focusedHeading, setFocusedHeading] = useState<string>(null);
++
++        // Ensure uniqueness of ids between MD preview instances.
++        const [idPrefix] = useState<string>(crypto.randomUUID());
++
++        const scrollToAnchorEl = (anchor: string) => {
++            const osInstance = contentsOsRef.current?.osInstance();
++            if (!osInstance || !anchor) {
++                return false;
+             }
+-        }
+-    }, [focusedHeading]);
+-
+-    const markdownComponents: Partial<Components> = {
+-        a: (props: React.HTMLAttributes<HTMLAnchorElement>) => (
+-            <Link props={props} setFocusedHeading={setFocusedHeading} />
+-        ),
+-        p: (props: React.HTMLAttributes<HTMLParagraphElement>) => <div className="paragraph" {...props} />,
+-        h1: (props: React.HTMLAttributes<HTMLHeadingElement>) => <Heading props={props} hnum={1} />,
+-        h2: (props: React.HTMLAttributes<HTMLHeadingElement>) => <Heading props={props} hnum={2} />,
+-        h3: (props: React.HTMLAttributes<HTMLHeadingElement>) => <Heading props={props} hnum={3} />,
+-        h4: (props: React.HTMLAttributes<HTMLHeadingElement>) => <Heading props={props} hnum={4} />,
+-        h5: (props: React.HTMLAttributes<HTMLHeadingElement>) => <Heading props={props} hnum={5} />,
+-        h6: (props: React.HTMLAttributes<HTMLHeadingElement>) => <Heading props={props} hnum={6} />,
+-        img: (props: React.HTMLAttributes<HTMLImageElement>) => <MarkdownImg props={props} resolveOpts={resolveOpts} />,
+-        source: (props: React.HTMLAttributes<HTMLSourceElement>) => (
+-            <MarkdownSource props={props} resolveOpts={resolveOpts} />
+-        ),
+-        code: Code,
+-        pre: (props: React.HTMLAttributes<HTMLPreElement>) => (
+-            <CodeBlock children={props.children} onClickExecute={onClickExecute} />
+-        ),
+-    };
+-    markdownComponents["waveblock"] = (props: any) => <WaveBlock {...props} blockmap={contentBlocksMap} />;
+-    markdownComponents["mermaidblock"] = (props: any) => {
+-        const getTextContent = (children: any): string => {
+-            if (typeof children === "string") {
+-                return children;
+-            } else if (Array.isArray(children)) {
+-                return children.map(getTextContent).join("");
+-            } else if (children && typeof children === "object" && children.props && children.props.children) {
+-                return getTextContent(children.props.children);
++            const { viewport } = osInstance.elements();
++            const heading = document.getElementById(idPrefix + anchor.slice(1));
++            if (!heading) {
++                return false;
+             }
+-            return String(children || "");
++            const headingTop = heading.getBoundingClientRect().top - viewport.getBoundingClientRect().top;
++            viewport.scrollBy({ top: headingTop });
++            return true;
+         };
+ 
+-        const chartText = getTextContent(props.children);
+-        return <Mermaid chart={chartText} />;
+-    };
++        text = textAtomValue ?? text ?? "";
++        const transformedOutput = transformBlocks(text);
++        const transformedText = transformedOutput.content;
++        const contentBlocksMap = transformedOutput.blocks;
++
++        // Preserve the scroll position across content changes (e.g. refreshing an edited file)
++        // so the viewer stays where the user was instead of jumping back to the top.
++        useLayoutEffect(() => {
++            const isContentUpdate = prevTextRef.current != null && prevTextRef.current !== transformedText;
++            prevTextRef.current = transformedText;
++            if (!isContentUpdate) {
++                return;
++            }
++            const osInstance = contentsOsRef.current?.osInstance();
++            if (!osInstance) {
++                return;
++            }
++            osInstance.elements().viewport.scrollTop = scrollTopRef.current;
++        }, [transformedText]);
+ 
+-    const toc = useMemo(() => {
+-        if (showToc) {
+-            if (tocRef.current.length > 0) {
+-                return tocRef.current.map((item) => {
++        useEffect(() => {
++            if (focusedHeading) {
++                scrollToAnchorEl(focusedHeading);
++            }
++        }, [focusedHeading]);
++
++        useImperativeHandle(ref, () => ({
++            scrollToAnchor: (anchor: string) => scrollToAnchorEl(anchor),
++            getCurrentAnchor: () => {
++                const osInstance = contentsOsRef.current?.osInstance();
++                if (!osInstance) {
++                    return null;
++                }
++                const { viewport } = osInstance.elements();
++                const viewportTop = viewport.getBoundingClientRect().top;
++                const items = tocRef.current.map((t) => {
++                    const el = document.getElementById(idPrefix + t.href.slice(1));
++                    return {
++                        href: t.href,
++                        top: el ? el.getBoundingClientRect().top - viewportTop : Number.POSITIVE_INFINITY,
++                    };
++                });
++                return pickCurrentAnchor(items, 0);
++            },
++        }));
++
++        const markdownComponents: Partial<Components> = {
++            a: (props: React.HTMLAttributes<HTMLAnchorElement>) => (
++                <Link props={props} setFocusedHeading={setFocusedHeading} />
++            ),
++            p: (props: React.HTMLAttributes<HTMLParagraphElement>) => <div className="paragraph" {...props} />,
++            h1: (props: React.HTMLAttributes<HTMLHeadingElement>) => <Heading props={props} hnum={1} />,
++            h2: (props: React.HTMLAttributes<HTMLHeadingElement>) => <Heading props={props} hnum={2} />,
++            h3: (props: React.HTMLAttributes<HTMLHeadingElement>) => <Heading props={props} hnum={3} />,
++            h4: (props: React.HTMLAttributes<HTMLHeadingElement>) => <Heading props={props} hnum={4} />,
++            h5: (props: React.HTMLAttributes<HTMLHeadingElement>) => <Heading props={props} hnum={5} />,
++            h6: (props: React.HTMLAttributes<HTMLHeadingElement>) => <Heading props={props} hnum={6} />,
++            img: (props: React.HTMLAttributes<HTMLImageElement>) => (
++                <MarkdownImg props={props} resolveOpts={resolveOpts} />
++            ),
++            source: (props: React.HTMLAttributes<HTMLSourceElement>) => (
++                <MarkdownSource props={props} resolveOpts={resolveOpts} />
++            ),
++            code: Code,
++            pre: (props: React.HTMLAttributes<HTMLPreElement>) => (
++                <CodeBlock children={props.children} onClickExecute={onClickExecute} />
++            ),
++        };
++        markdownComponents["waveblock"] = (props: any) => <WaveBlock {...props} blockmap={contentBlocksMap} />;
++        markdownComponents["mermaidblock"] = (props: any) => {
++            const getTextContent = (children: any): string => {
++                if (typeof children === "string") {
++                    return children;
++                } else if (Array.isArray(children)) {
++                    return children.map(getTextContent).join("");
++                } else if (children && typeof children === "object" && children.props && children.props.children) {
++                    return getTextContent(children.props.children);
++                }
++                return String(children || "");
++            };
++
++            const chartText = getTextContent(props.children);
++            return <Mermaid chart={chartText} />;
++        };
++
++        const toc = useMemo(() => {
++            if (showToc) {
++                if (tocRef.current.length > 0) {
++                    return tocRef.current.map((item) => {
++                        return (
++                            <a
++                                key={item.href}
++                                className="toc-item text-accent hover:underline"
++                                style={{ "--indent-factor": item.depth } as React.CSSProperties}
++                                onClick={() => setFocusedHeading(item.href)}
++                            >
++                                {item.value}
++                            </a>
++                        );
++                    });
++                } else {
+                     return (
+-                        <a
+-                            key={item.href}
+-                            className="toc-item text-accent hover:underline"
+-                            style={{ "--indent-factor": item.depth } as React.CSSProperties}
+-                            onClick={() => setFocusedHeading(item.href)}
++                        <div
++                            className="toc-item toc-empty text-secondary"
++                            style={{ "--indent-factor": 2 } as React.CSSProperties}
+                         >
+-                            {item.value}
+-                        </a>
++                            No sub-headings found
++                        </div>
+                     );
+-                });
+-            } else {
+-                return (
+-                    <div
+-                        className="toc-item toc-empty text-secondary"
+-                        style={{ "--indent-factor": 2 } as React.CSSProperties}
+-                    >
+-                        No sub-headings found
+-                    </div>
+-                );
++                }
+             }
+-        }
+-    }, [showToc, tocRef]);
+-
+-    let rehypePlugins = null;
+-    if (rehype) {
+-        rehypePlugins = [
+-            rehypeRaw,
+-            rehypeHighlight,
+-            () =>
+-                rehypeSanitize({
+-                    ...defaultSchema,
+-                    attributes: {
+-                        ...defaultSchema.attributes,
+-                        span: [
+-                            ...(defaultSchema.attributes?.span || []),
+-                            // Allow all class names starting with `hljs-`.
+-                            ["className", /^hljs-./],
+-                            ["srcset"],
+-                            ["media"],
+-                            ["type"],
+-                            // Alternatively, to allow only certain class names:
+-                            // ['className', 'hljs-number', 'hljs-title', 'hljs-variable']
++        }, [showToc, tocRef]);
++
++        let rehypePlugins = null;
++        if (rehype) {
++            rehypePlugins = [
++                rehypeRaw,
++                rehypeHighlight,
++                () =>
++                    rehypeSanitize({
++                        ...defaultSchema,
++                        attributes: {
++                            ...defaultSchema.attributes,
++                            span: [
++                                ...(defaultSchema.attributes?.span || []),
++                                // Allow all class names starting with `hljs-`.
++                                ["className", /^hljs-./],
++                                ["srcset"],
++                                ["media"],
++                                ["type"],
++                                // Alternatively, to allow only certain class names:
++                                // ['className', 'hljs-number', 'hljs-title', 'hljs-variable']
++                            ],
++                            waveblock: [["blockkey"]],
++                        },
++                        tagNames: [
++                            ...(defaultSchema.tagNames || []),
++                            "span",
++                            "waveblock",
++                            "picture",
++                            "source",
++                            "mermaidblock",
+                         ],
+-                        waveblock: [["blockkey"]],
+-                    },
+-                    tagNames: [
+-                        ...(defaultSchema.tagNames || []),
+-                        "span",
+-                        "waveblock",
+-                        "picture",
+-                        "source",
+-                        "mermaidblock",
+-                    ],
+-                }),
+-            () => rehypeSlug({ prefix: idPrefix }),
++                    }),
++                () => rehypeSlug({ prefix: idPrefix }),
++            ];
++        }
++        const remarkPlugins: any = [
++            remarkMermaidToTag,
++            remarkGfm,
++            [RemarkFlexibleToc, { tocRef: tocRef.current }],
++            [createContentBlockPlugin, { blocks: contentBlocksMap }],
+         ];
+-    }
+-    const remarkPlugins: any = [
+-        remarkMermaidToTag,
+-        remarkGfm,
+-        [RemarkFlexibleToc, { tocRef: tocRef.current }],
+-        [createContentBlockPlugin, { blocks: contentBlocksMap }],
+-    ];
+-
+-    const ScrollableMarkdown = () => {
+-        return (
+-            <OverlayScrollbarsComponent
+-                ref={contentsOsRef}
+-                className={cn("content", contentClassName)}
+-                options={{ scrollbars: { autoHide: "leave" } }}
+-            >
+-                <ReactMarkdown
+-                    remarkPlugins={remarkPlugins}
+-                    rehypePlugins={rehypePlugins}
+-                    components={markdownComponents}
+-                >
+-                    {transformedText}
+-                </ReactMarkdown>
+-            </OverlayScrollbarsComponent>
++
++        const markdownContent = (
++            <ReactMarkdown remarkPlugins={remarkPlugins} rehypePlugins={rehypePlugins} components={markdownComponents}>
++                {transformedText}
++            </ReactMarkdown>
+         );
+-    };
+ 
+-    const NonScrollableMarkdown = () => {
++        const mergedStyle = { ...style };
++        if (fontSizeOverride != null) {
++            mergedStyle["--markdown-font-size"] = `${boundNumber(fontSizeOverride, 6, 64)}px`;
++        }
++        if (fixedFontSizeOverride != null) {
++            mergedStyle["--markdown-fixed-font-size"] = `${boundNumber(fixedFontSizeOverride, 6, 64)}px`;
++        }
+         return (
+-            <div className={cn("content non-scrollable", contentClassName)}>
+-                <ReactMarkdown
+-                    remarkPlugins={remarkPlugins}
+-                    rehypePlugins={rehypePlugins}
+-                    components={markdownComponents}
+-                >
+-                    {transformedText}
+-                </ReactMarkdown>
++            <div className={clsx("markdown", className)} style={mergedStyle}>
++                {scrollable ? (
++                    <OverlayScrollbarsComponent
++                        ref={contentsOsRef}
++                        className={cn("content", contentClassName)}
++                        options={{ scrollbars: { autoHide: "leave" } }}
++                        events={{
++                            scroll: (instance) => {
++                                scrollTopRef.current = instance.elements().viewport.scrollTop;
++                            },
++                        }}
++                    >
++                        {markdownContent}
++                    </OverlayScrollbarsComponent>
++                ) : (
++                    <div className={cn("content non-scrollable", contentClassName)}>{markdownContent}</div>
++                )}
++                {toc && (
++                    <OverlayScrollbarsComponent className="toc mt-1" options={{ scrollbars: { autoHide: "leave" } }}>
++                        <div className="toc-inner">
++                            <h4 className="font-bold">Table of Contents</h4>
++                            {toc}
++                        </div>
++                    </OverlayScrollbarsComponent>
++                )}
+             </div>
+         );
+-    };
+-
+-    const mergedStyle = { ...style };
+-    if (fontSizeOverride != null) {
+-        mergedStyle["--markdown-font-size"] = `${boundNumber(fontSizeOverride, 6, 64)}px`;
+-    }
+-    if (fixedFontSizeOverride != null) {
+-        mergedStyle["--markdown-fixed-font-size"] = `${boundNumber(fixedFontSizeOverride, 6, 64)}px`;
+     }
+-    return (
+-        <div className={clsx("markdown", className)} style={mergedStyle}>
+-            {scrollable ? <ScrollableMarkdown /> : <NonScrollableMarkdown />}
+-            {toc && (
+-                <OverlayScrollbarsComponent className="toc mt-1" options={{ scrollbars: { autoHide: "leave" } }}>
+-                    <div className="toc-inner">
+-                        <h4 className="font-bold">Table of Contents</h4>
+-                        {toc}
+-                    </div>
+-                </OverlayScrollbarsComponent>
+-            )}
+-        </div>
+-    );
+-};
++);
++Markdown.displayName = "Markdown";
+ 
+ export { Markdown };
++export type { MarkdownHandle };
+diff --git a/frontend/app/modals/modalregistry.tsx b/frontend/app/modals/modalregistry.tsx
+index 88d19e73..0b55a8a3 100644
+--- a/frontend/app/modals/modalregistry.tsx
++++ b/frontend/app/modals/modalregistry.tsx
+@@ -5,6 +5,7 @@ import { MessageModal } from "@/app/modals/messagemodal";
+ import { NewInstallOnboardingModal } from "@/app/onboarding/onboarding";
+ import { UpgradeOnboardingModal } from "@/app/onboarding/onboarding-upgrade";
+ import { UpgradeOnboardingPatch } from "@/app/onboarding/onboarding-upgrade-patch";
++import { EditBookmarksModal } from "@/app/view/preview/bookmarks-edit-modal";
+ import { DeleteFileModal, PublishAppModal, RenameFileModal } from "@/builder/builder-apppanel";
+ import { SetSecretDialog } from "@/builder/tabs/builder-secrettab";
+ import { AboutModal } from "./about";
+@@ -21,6 +22,7 @@ const modalRegistry: { [key: string]: React.ComponentType<any> } = {
+     [RenameFileModal.displayName || "RenameFileModal"]: RenameFileModal,
+     [DeleteFileModal.displayName || "DeleteFileModal"]: DeleteFileModal,
+     [SetSecretDialog.displayName || "SetSecretDialog"]: SetSecretDialog,
++    [EditBookmarksModal.displayName || "EditBookmarksModal"]: EditBookmarksModal,
+ };
+ 
+ export const getModalComponent = (key: string): React.ComponentType<any> | undefined => {
+diff --git a/frontend/app/store/bookmarksmodel.test.ts b/frontend/app/store/bookmarksmodel.test.ts
+new file mode 100644
+index 00000000..791802ff
+--- /dev/null
++++ b/frontend/app/store/bookmarksmodel.test.ts
+@@ -0,0 +1,28 @@
++// Copyright 2026, Command Line Inc.
++// SPDX-License-Identifier: Apache-2.0
++
++import { describe, expect, it } from "vitest";
++import { nextDisplayOrder, sortBookmarks } from "./bookmarksmodel";
++
++describe("sortBookmarks", () => {
++    it("returns [] for null", () => {
++        expect(sortBookmarks(null)).toEqual([]);
++    });
++    it("sorts by display:order ascending", () => {
++        const map = {
++            b: { bookmarktype: "folder", label: "B", path: "/b", "display:order": 2 } as any,
++            a: { bookmarktype: "folder", label: "A", path: "/a", "display:order": 1 } as any,
++        };
++        const out = sortBookmarks(map);
++        expect(out.map((e) => e.key)).toEqual(["a", "b"]);
++    });
++});
++
++describe("nextDisplayOrder", () => {
++    it("returns 1 for empty", () => {
++        expect(nextDisplayOrder([])).toBe(1);
++    });
++    it("returns max+1", () => {
++        expect(nextDisplayOrder([{ key: "x", "display:order": 4 } as any])).toBe(5);
++    });
++});
+diff --git a/frontend/app/store/bookmarksmodel.ts b/frontend/app/store/bookmarksmodel.ts
+new file mode 100644
+index 00000000..b20d666c
+--- /dev/null
++++ b/frontend/app/store/bookmarksmodel.ts
+@@ -0,0 +1,100 @@
++// Copyright 2026, Command Line Inc.
++// SPDX-License-Identifier: Apache-2.0
++
++import { atoms } from "@/app/store/global-atoms";
++import { globalStore } from "@/app/store/jotaiStore";
++import { RpcApi } from "@/app/store/wshclientapi";
++import { TabRpcClient } from "@/app/store/wshrpcutil";
++import { Atom, atom } from "jotai";
++
++type BookmarkEntry = FileBookmark & { key: string };
++
++function sortBookmarks(map: { [key: string]: FileBookmark }): BookmarkEntry[] {
++    if (map == null) {
++        return [];
++    }
++    const entries: BookmarkEntry[] = Object.keys(map).map((key) => ({ key, ...map[key] }));
++    entries.sort((a, b) => (a["display:order"] ?? 0) - (b["display:order"] ?? 0));
++    return entries;
++}
++
++function nextDisplayOrder(entries: BookmarkEntry[]): number {
++    let max = 0;
++    for (const e of entries) {
++        const ord = e["display:order"] ?? 0;
++        if (ord > max) {
++            max = ord;
++        }
++    }
++    return max + 1;
++}
++
++const fileBookmarksAtom: Atom<BookmarkEntry[]> = atom((get) => {
++    const fullConfig = get(atoms.fullConfigAtom);
++    return sortBookmarks(fullConfig?.filebookmarks);
++});
++
++class BookmarksModel {
++    private static instance: BookmarksModel | null = null;
++
++    static getInstance(): BookmarksModel {
++        if (!BookmarksModel.instance) {
++            BookmarksModel.instance = new BookmarksModel();
++        }
++        return BookmarksModel.instance;
++    }
++
++    private constructor() {}
++
++    getBookmarks(): BookmarkEntry[] {
++        return globalStore.get(fileBookmarksAtom);
++    }
++
++    async add(bookmark: FileBookmark): Promise<string> {
++        const key = crypto.randomUUID();
++        const order = nextDisplayOrder(this.getBookmarks());
++        await RpcApi.SetFileBookmarkCommand(TabRpcClient, {
++            key,
++            bookmark: { ...bookmark, "display:order": order },
++        });
++        return key;
++    }
++
++    async update(key: string, patch: Partial<FileBookmark>): Promise<void> {
++        const existing = this.getBookmarks().find((b) => b.key == key);
++        if (existing == null) {
++            return;
++        }
++        const { key: _omit, ...rest } = existing;
++        await RpcApi.SetFileBookmarkCommand(TabRpcClient, {
++            key,
++            bookmark: { ...rest, ...patch },
++        });
++    }
++
++    async remove(key: string): Promise<void> {
++        await RpcApi.DeleteFileBookmarkCommand(TabRpcClient, key);
++    }
++
++    async reorder(orderedKeys: string[]): Promise<void> {
++        const byKey = new Map(this.getBookmarks().map((b) => [b.key, b]));
++        for (let i = 0; i < orderedKeys.length; i++) {
++            const b = byKey.get(orderedKeys[i]);
++            if (b == null) {
++                continue;
++            }
++            const newOrder = i + 1;
++            if ((b["display:order"] ?? 0) == newOrder) {
++                continue;
++            }
++            const { key: _omit, ...rest } = b;
++            await RpcApi.SetFileBookmarkCommand(TabRpcClient, {
++                key: b.key,
++                bookmark: { ...rest, "display:order": newOrder },
++            });
++        }
++    }
++}
++
++export { BookmarksModel, fileBookmarksAtom, nextDisplayOrder, sortBookmarks };
++export type { BookmarkEntry };
+diff --git a/frontend/app/store/wshclientapi.ts b/frontend/app/store/wshclientapi.ts
+index 8482be26..e4690e02 100644
+--- a/frontend/app/store/wshclientapi.ts
++++ b/frontend/app/store/wshclientapi.ts
+@@ -216,6 +216,12 @@ export class RpcApiType {
+         return client.wshRpcCall("deletebuilder", data, opts);
+     }
+ 
++    // command "deletefilebookmark" [call]
++    DeleteFileBookmarkCommand(client: WshClient, data: string, opts?: RpcOpts): Promise<void> {
++        if (this.mockClient) return this.mockClient.mockWshRpcCall(client, "deletefilebookmark", data, opts);
++        return client.wshRpcCall("deletefilebookmark", data, opts);
++    }
++
+     // command "deletesubblock" [call]
+     DeleteSubBlockCommand(client: WshClient, data: CommandDeleteBlockData, opts?: RpcOpts): Promise<void> {
+         if (this.mockClient) return this.mockClient.mockWshRpcCall(client, "deletesubblock", data, opts);
+@@ -852,6 +858,12 @@ export class RpcApiType {
+         return client.wshRpcCall("setconnectionsconfig", data, opts);
+     }
+ 
++    // command "setfilebookmark" [call]
++    SetFileBookmarkCommand(client: WshClient, data: FileBookmarkSetRequest, opts?: RpcOpts): Promise<void> {
++        if (this.mockClient) return this.mockClient.mockWshRpcCall(client, "setfilebookmark", data, opts);
++        return client.wshRpcCall("setfilebookmark", data, opts);
++    }
++
+     // command "setmeta" [call]
+     SetMetaCommand(client: WshClient, data: CommandSetMetaData, opts?: RpcOpts): Promise<void> {
+         if (this.mockClient) return this.mockClient.mockWshRpcCall(client, "setmeta", data, opts);
+diff --git a/frontend/app/view/preview/bookmarks-edit-modal.tsx b/frontend/app/view/preview/bookmarks-edit-modal.tsx
+new file mode 100644
+index 00000000..f53a98f8
+--- /dev/null
++++ b/frontend/app/view/preview/bookmarks-edit-modal.tsx
+@@ -0,0 +1,63 @@
++// Copyright 2026, Command Line Inc.
++// SPDX-License-Identifier: Apache-2.0
++
++import { Modal } from "@/app/modals/modal";
++import { BookmarksModel, fileBookmarksAtom, type BookmarkEntry } from "@/app/store/bookmarksmodel";
++import { modalsModel } from "@/app/store/modalmodel";
++import { fireAndForget } from "@/util/util";
++import { useAtomValue } from "jotai";
++
++function EditBookmarksModal() {
++    const entries = useAtomValue(fileBookmarksAtom);
++    const model = BookmarksModel.getInstance();
++
++    const move = (index: number, delta: number) => {
++        const keys = entries.map((e) => e.key);
++        const target = index + delta;
++        if (target < 0 || target >= keys.length) {
++            return;
++        }
++        [keys[index], keys[target]] = [keys[target], keys[index]];
++        fireAndForget(() => model.reorder(keys));
++    };
++
++    const rename = (bm: BookmarkEntry, label: string) => {
++        fireAndForget(() => model.update(bm.key, { label }));
++    };
++
++    return (
++        <Modal onClose={() => modalsModel.popModal()}>
++            <div className="flex flex-col gap-2 p-4 min-w-[420px]">
++                <div className="text-lg font-bold">Edit Bookmarks</div>
++                {entries.length == 0 && <div className="text-secondary">No bookmarks yet.</div>}
++                {entries.map((bm, i) => (
++                    <div key={bm.key} className="flex flex-row items-center gap-2">
++                        <input
++                            className="flex-1 bg-transparent border border-border rounded px-2 py-1"
++                            defaultValue={bm.label}
++                            onBlur={(e) => rename(bm, e.target.value)}
++                        />
++                        <span className="text-secondary text-xs truncate max-w-[140px]">{bm.path}</span>
++                        <button className="cursor-pointer px-1" onClick={() => move(i, -1)} title="Move up">
++                            ↑
++                        </button>
++                        <button className="cursor-pointer px-1" onClick={() => move(i, 1)} title="Move down">
++                            ↓
++                        </button>
++                        <button
++                            className="cursor-pointer px-1 text-error"
++                            onClick={() => fireAndForget(() => model.remove(bm.key))}
++                            title="Delete"
++                        >
++                            ✕
++                        </button>
++                    </div>
++                ))}
++            </div>
++        </Modal>
++    );
++}
++
++EditBookmarksModal.displayName = "EditBookmarksModal";
++
++export { EditBookmarksModal };
+diff --git a/frontend/app/view/preview/bookmarks-menu.test.ts b/frontend/app/view/preview/bookmarks-menu.test.ts
+new file mode 100644
+index 00000000..26e4d384
+--- /dev/null
++++ b/frontend/app/view/preview/bookmarks-menu.test.ts
+@@ -0,0 +1,25 @@
++// Copyright 2026, Command Line Inc.
++// SPDX-License-Identifier: Apache-2.0
++
++import { describe, expect, it, vi } from "vitest";
++import { bookmarkIcon, bookmarkLabel, buildBookmarkMenu } from "./bookmarks-menu";
++
++const folder = { key: "k", bookmarktype: "folder", label: "Home", path: "~" } as any;
++
++describe("bookmark menu helpers", () => {
++    it("icon by type", () => {
++        expect(bookmarkIcon(folder)).toBe("folder");
++        expect(bookmarkIcon({ ...folder, bookmarktype: "docpos" })).toBe("bookmark");
++        expect(bookmarkIcon({ ...folder, bookmarktype: "file" })).toBe("file");
++    });
++    it("label falls back to path", () => {
++        expect(bookmarkLabel({ ...folder, label: "" })).toBe("~");
++    });
++    it("builds menu with entries + actions", () => {
++        const onOpen = vi.fn();
++        const menu = buildBookmarkMenu([folder], { onOpen, onAddCurrent: vi.fn(), onEdit: vi.fn() });
++        expect(menu.length).toBe(4); // 1 bookmark + separator + add + edit
++        (menu[0] as any).click();
++        expect(onOpen).toHaveBeenCalledWith(folder);
++    });
++});
+diff --git a/frontend/app/view/preview/bookmarks-menu.ts b/frontend/app/view/preview/bookmarks-menu.ts
+new file mode 100644
+index 00000000..4f23cd6d
+--- /dev/null
++++ b/frontend/app/view/preview/bookmarks-menu.ts
+@@ -0,0 +1,43 @@
++// Copyright 2026, Command Line Inc.
++// SPDX-License-Identifier: Apache-2.0
++
++import type { BookmarkEntry } from "@/app/store/bookmarksmodel";
++
++function bookmarkIcon(bm: BookmarkEntry): string {
++    if (bm.bookmarktype == "folder") {
++        return "folder";
++    }
++    if (bm.bookmarktype == "docpos") {
++        return "bookmark";
++    }
++    return "file";
++}
++
++function bookmarkLabel(bm: BookmarkEntry): string {
++    if (bm.label) {
++        return bm.label;
++    }
++    return bm.path;
++}
++
++type BookmarkMenuHandlers = {
++    onOpen: (bm: BookmarkEntry) => void;
++    onAddCurrent: () => void;
++    onEdit: () => void;
++};
++
++function buildBookmarkMenu(entries: BookmarkEntry[], handlers: BookmarkMenuHandlers): ContextMenuItem[] {
++    const menu: ContextMenuItem[] = entries.map((bm) => ({
++        label: bookmarkLabel(bm),
++        click: () => handlers.onOpen(bm),
++    }));
++    if (entries.length > 0) {
++        menu.push({ type: "separator" });
++    }
++    menu.push({ label: "Add Current Location", click: () => handlers.onAddCurrent() });
++    menu.push({ label: "Edit Bookmarks…", click: () => handlers.onEdit() });
++    return menu;
++}
++
++export { bookmarkIcon, bookmarkLabel, buildBookmarkMenu };
++export type { BookmarkMenuHandlers };
+diff --git a/frontend/app/view/preview/preview-directory.tsx b/frontend/app/view/preview/preview-directory.tsx
+index 0940ba43..6e817a8e 100644
+--- a/frontend/app/view/preview/preview-directory.tsx
++++ b/frontend/app/view/preview/preview-directory.tsx
+@@ -1,6 +1,7 @@
+ // Copyright 2026, Command Line Inc.
+ // SPDX-License-Identifier: Apache-2.0
+ 
++import { BookmarksModel } from "@/app/store/bookmarksmodel";
+ import { ContextMenuModel } from "@/app/store/contextmenu";
+ import { globalStore } from "@/app/store/jotaiStore";
+ import { TabRpcClient } from "@/app/store/wshrpcutil";
+@@ -407,6 +408,21 @@ function TableBody({
+                     click: () => fireAndForget(() => navigator.clipboard.writeText(shellQuote([finfo.path]))),
+                 },
+             ];
++            menu.push(
++                { type: "separator" },
++                {
++                    label: "Add to Bookmarks",
++                    click: () =>
++                        fireAndForget(() =>
++                            BookmarksModel.getInstance().add({
++                                bookmarktype: finfo.isdir ? "folder" : "file",
++                                label: fileName,
++                                path: finfo.path,
++                                connection: conn ?? "",
++                            } as FileBookmark)
++                        ),
++                }
++            );
+             addOpenMenuItems(menu, conn, finfo);
+             menu.push(
+                 {
+diff --git a/frontend/app/view/preview/preview-edit.tsx b/frontend/app/view/preview/preview-edit.tsx
+index 2961771f..455a85d8 100644
+--- a/frontend/app/view/preview/preview-edit.tsx
++++ b/frontend/app/view/preview/preview-edit.tsx
+@@ -38,6 +38,7 @@ export const shellFileMap: Record<string, string> = {
+ 
+ function CodeEditPreview({ model }: SpecializedViewProps) {
+     const fileContent = useAtomValue(model.fileContent);
++    const pendingLocation = useAtomValue(model.pendingLocationAtom);
+     const setNewFileContent = useSetAtom(model.newFileContent);
+     const fileInfo = useAtomValue(model.statFile);
+     const fileName = fileInfo?.path || fileInfo?.name;
+@@ -66,16 +67,38 @@ function CodeEditPreview({ model }: SpecializedViewProps) {
+         model.refreshCallback = () => {
+             globalStore.set(model.refreshVersion, (v) => v + 1);
+         };
++        model.captureLocationCallback = () => {
++            const line = model.monacoRef.current?.getPosition()?.lineNumber;
++            return line ? { line } : null;
++        };
+         return () => {
+             model.codeEditKeyDownHandler = null;
+             model.monacoRef.current = null;
+             model.refreshCallback = null;
++            model.captureLocationCallback = null;
+         };
+     }, []);
+ 
++    useEffect(() => {
++        const editor = model.monacoRef.current;
++        if (!editor || !pendingLocation?.line) {
++            return;
++        }
++        editor.revealLineNearTop(pendingLocation.line);
++        editor.setPosition({ lineNumber: pendingLocation.line, column: 1 });
++        globalStore.set(model.pendingLocationAtom, null);
++    }, [pendingLocation]);
++
+     function onMount(editor: MonacoTypes.editor.IStandaloneCodeEditor, monacoApi: typeof monaco): () => void {
+         model.monacoRef.current = editor;
+ 
++        const pending = globalStore.get(model.pendingLocationAtom);
++        if (pending?.line) {
++            editor.revealLineNearTop(pending.line);
++            editor.setPosition({ lineNumber: pending.line, column: 1 });
++            globalStore.set(model.pendingLocationAtom, null);
++        }
++
+         const keyDownDisposer = editor.onKeyDown((e: MonacoTypes.IKeyboardEvent) => {
+             const waveEvent = adaptFromReactOrNativeKeyEvent(e.browserEvent);
+             const handled = tryReinjectKey(waveEvent);
+diff --git a/frontend/app/view/preview/preview-markdown.tsx b/frontend/app/view/preview/preview-markdown.tsx
+index d47248d4..857f56d0 100644
+--- a/frontend/app/view/preview/preview-markdown.tsx
++++ b/frontend/app/view/preview/preview-markdown.tsx
+@@ -2,21 +2,38 @@
+ // SPDX-License-Identifier: Apache-2.0
+ 
+ import { globalStore } from "@/app/store/jotaiStore";
+-import { Markdown } from "@/element/markdown";
++import { Markdown, type MarkdownHandle } from "@/element/markdown";
+ import { getOverrideConfigAtom } from "@/store/global";
+ import { useAtomValue } from "jotai";
+-import { useEffect, useMemo } from "react";
++import { useEffect, useMemo, useRef } from "react";
+ import type { SpecializedViewProps } from "./preview";
+ 
+ function MarkdownPreview({ model }: SpecializedViewProps) {
++    const markdownRef = useRef<MarkdownHandle>(null);
++    const pendingLocation = useAtomValue(model.pendingLocationAtom);
++    const fileContent = useAtomValue(model.fileContent);
+     useEffect(() => {
+         model.refreshCallback = () => {
+             globalStore.set(model.refreshVersion, (v) => v + 1);
+         };
++        model.captureLocationCallback = () => {
++            const anchor = markdownRef.current?.getCurrentAnchor();
++            return anchor ? { anchor } : null;
++        };
+         return () => {
+             model.refreshCallback = null;
++            model.captureLocationCallback = null;
+         };
+     }, []);
++    useEffect(() => {
++        if (!pendingLocation?.anchor) {
++            return;
++        }
++        const scrolled = markdownRef.current?.scrollToAnchor(pendingLocation.anchor);
++        if (scrolled) {
++            globalStore.set(model.pendingLocationAtom, null);
++        }
++    }, [pendingLocation, fileContent]);
+     const connName = useAtomValue(model.connection);
+     const fileInfo = useAtomValue(model.statFile);
+     const fontSizeOverride = useAtomValue(getOverrideConfigAtom(model.blockId, "markdown:fontsize"));
+@@ -30,6 +47,7 @@ function MarkdownPreview({ model }: SpecializedViewProps) {
+     return (
+         <div className="flex flex-row h-full overflow-auto items-start justify-start">
+             <Markdown
++                ref={markdownRef}
+                 textAtom={model.fileContent}
+                 showTocAtom={model.markdownShowToc}
+                 resolveOpts={resolveOpts}
+diff --git a/frontend/app/view/preview/preview-model.tsx b/frontend/app/view/preview/preview-model.tsx
+index 8315e48b..f9e3a3a3 100644
+--- a/frontend/app/view/preview/preview-model.tsx
++++ b/frontend/app/view/preview/preview-model.tsx
+@@ -2,8 +2,10 @@
+ // SPDX-License-Identifier: Apache-2.0
+ 
+ import { BlockNodeModel } from "@/app/block/blocktypes";
++import { BookmarksModel, fileBookmarksAtom, type BookmarkEntry } from "@/app/store/bookmarksmodel";
+ import { ContextMenuModel } from "@/app/store/contextmenu";
+ import { globalStore } from "@/app/store/jotaiStore";
++import { modalsModel } from "@/app/store/modalmodel";
+ import type { TabModel } from "@/app/store/tab-model";
+ import { TabRpcClient } from "@/app/store/wshrpcutil";
+ import { getOverrideConfigAtom, refocusNode } from "@/store/global";
+@@ -18,19 +20,11 @@ import { Atom, atom, Getter, PrimitiveAtom, WritableAtom } from "jotai";
+ import { loadable } from "jotai/utils";
+ import type * as MonacoTypes from "monaco-editor";
+ import { createRef } from "react";
++import { buildBookmarkMenu } from "./bookmarks-menu";
+ import { PreviewView } from "./preview";
+ import { makeDirectoryDefaultMenuItems } from "./preview-directory-utils";
+ import type { PreviewEnv } from "./previewenv";
+ 
+-// TODO drive this using config
+-const BOOKMARKS: { label: string; path: string }[] = [
+-    { label: "Home", path: "~" },
+-    { label: "Desktop", path: "~/Desktop" },
+-    { label: "Downloads", path: "~/Downloads" },
+-    { label: "Documents", path: "~/Documents" },
+-    { label: "Root", path: "/" },
+-];
+-
+ const MaxFileSize = 1024 * 1024 * 10; // 10MB
+ const MaxCSVSize = 1024 * 1024 * 1; // 1MB
+ 
+@@ -166,6 +160,8 @@ export class PreviewModel implements ViewModel {
+     refreshVersion: PrimitiveAtom<number>;
+     directorySearchActive: PrimitiveAtom<boolean>;
+     refreshCallback: () => void;
++    pendingLocationAtom: PrimitiveAtom<{ anchor?: string; line?: number }>;
++    captureLocationCallback: () => { anchor?: string; line?: number } | null;
+     directoryKeyDownHandler: (waveEvent: WaveKeyboardEvent) => boolean;
+     codeEditKeyDownHandler: (waveEvent: WaveKeyboardEvent) => boolean;
+     env: PreviewEnv;
+@@ -190,6 +186,8 @@ export class PreviewModel implements ViewModel {
+         this.markdownShowToc = atom(false);
+         this.filterOutNowsh = atom(true);
+         this.monacoRef = createRef();
++        this.pendingLocationAtom = atom(null) as PrimitiveAtom<{ anchor?: string; line?: number }>;
++        this.captureLocationCallback = null;
+         this.connectionError = atom("");
+         this.errorMsgAtom = atom(null) as PrimitiveAtom<ErrorMsg | null>;
+         this.viewIcon = atom((get) => {
+@@ -208,11 +206,7 @@ export class PreviewModel implements ViewModel {
+                     elemtype: "iconbutton",
+                     icon: "folder-open",
+                     longClick: (e: React.MouseEvent<any>) => {
+-                        const menuItems: ContextMenuItem[] = BOOKMARKS.map((bookmark) => ({
+-                            label: `Go to ${bookmark.label} (${bookmark.path})`,
+-                            click: () => this.goHistory(bookmark.path),
+-                        }));
+-                        ContextMenuModel.getInstance().showContextMenu(menuItems, e);
++                        this.showBookmarkMenu(e);
+                     },
+                 };
+             }
+@@ -332,9 +326,16 @@ export class PreviewModel implements ViewModel {
+             const mimeType = jotaiLoadableValue(get(this.fileMimeTypeLoadable), "");
+             const loadableSV = get(this.loadableSpecializedView);
+             const isCeView = loadableSV.state == "hasData" && loadableSV.data.specializedView == "codeedit";
++            const starButton: IconButtonDecl = {
++                elemtype: "iconbutton",
++                icon: "bookmark",
++                title: "Bookmarks",
++                click: (e: React.MouseEvent<any>) => this.showBookmarkMenu(e),
++            };
+             if (mimeType == "directory") {
+                 const showHiddenFiles = get(this.showHiddenFiles);
+                 return [
++                    starButton,
+                     {
+                         elemtype: "iconbutton",
+                         icon: showHiddenFiles ? "eye" : "eye-slash",
+@@ -351,6 +352,7 @@ export class PreviewModel implements ViewModel {
+                 ] as IconButtonDecl[];
+             } else if (!isCeView && isMarkdownLike(mimeType)) {
+                 return [
++                    starButton,
+                     {
+                         elemtype: "iconbutton",
+                         icon: "book",
+@@ -367,6 +369,7 @@ export class PreviewModel implements ViewModel {
+             } else if (!isCeView && mimeType) {
+                 // For all other file types (text, code, etc.), add refresh button
+                 return [
++                    starButton,
+                     {
+                         elemtype: "iconbutton",
+                         icon: "arrows-rotate",
+@@ -375,6 +378,9 @@ export class PreviewModel implements ViewModel {
+                     },
+                 ] as IconButtonDecl[];
+             }
++            if (mimeType) {
++                return [starButton] as IconButtonDecl[];
++            }
+             return null;
+         });
+         this.metaFilePath = atom<string>((get) => {
+@@ -595,6 +601,75 @@ export class PreviewModel implements ViewModel {
+         globalStore.set(this.newFileContent, null);
+     }
+ 
++    async openBookmark(bm: BookmarkEntry) {
++        const currentConn = globalStore.get(this.blockAtom)?.meta?.connection ?? "";
++        const bmConn = bm.connection ?? "";
++        if (bmConn != currentConn) {
++            const blockOref = WOS.makeORef("block", this.blockId);
++            await this.env.services.object.UpdateObjectMeta(blockOref, { connection: bmConn, file: bm.path });
++            globalStore.set(this.fileContentSaved, null);
++            globalStore.set(this.newFileContent, null);
++        } else {
++            await this.goHistory(bm.path);
++        }
++        if (bm.bookmarktype == "docpos") {
++            const target: { anchor?: string; line?: number } = {};
++            if (bm.anchor) {
++                target.anchor = bm.anchor;
++            }
++            if (bm.line) {
++                target.line = bm.line;
++            }
++            globalStore.set(this.pendingLocationAtom, target);
++        }
++        refocusNode(this.blockId);
++    }
++
++    async addCurrentLocationBookmark() {
++        const path = globalStore.get(this.metaFilePath);
++        const connection = (await globalStore.get(this.connection)) ?? "";
++        const mimeType = jotaiLoadableValue(globalStore.get(this.fileMimeTypeLoadable), "");
++        const basename = path?.split("/").pop() || path;
++        if (mimeType == "directory") {
++            await BookmarksModel.getInstance().add({
++                bookmarktype: "folder",
++                label: basename,
++                path,
++                connection,
++            } as FileBookmark);
++            return;
++        }
++        const loc = this.captureLocationCallback?.() ?? null;
++        if (loc == null) {
++            await BookmarksModel.getInstance().add({
++                bookmarktype: "file",
++                label: basename,
++                path,
++                connection,
++            } as FileBookmark);
++            return;
++        }
++        const label = loc.anchor ? `${basename} · §${loc.anchor.slice(1)}` : `${basename} : L${loc.line}`;
++        await BookmarksModel.getInstance().add({
++            bookmarktype: "docpos",
++            label,
++            path,
++            connection,
++            anchor: loc.anchor ?? "",
++            line: loc.line ?? 0,
++        } as FileBookmark);
++    }
++
++    showBookmarkMenu(e: React.MouseEvent<any>) {
++        const entries = globalStore.get(fileBookmarksAtom);
++        const menu = buildBookmarkMenu(entries, {
++            onOpen: (bm) => fireAndForget(() => this.openBookmark(bm)),
++            onAddCurrent: () => fireAndForget(() => this.addCurrentLocationBookmark()),
++            onEdit: () => modalsModel.pushModal("EditBookmarksModal"),
++        });
++        ContextMenuModel.getInstance().showContextMenu(menu, e);
++    }
++
+     async goParentDirectory({ fileInfo = null }: { fileInfo?: FileInfo | null }) {
+         // optional parameter needed for recursive case
+         const defaultFileInfo = await globalStore.get(this.statFile);
+diff --git a/frontend/preview/mock/defaultconfig.ts b/frontend/preview/mock/defaultconfig.ts
+index 415630b2..42ba33ec 100644
+--- a/frontend/preview/mock/defaultconfig.ts
++++ b/frontend/preview/mock/defaultconfig.ts
+@@ -18,7 +18,10 @@ export const DefaultFullConfig: FullConfigType = {
+     termthemes: termthemesJson as unknown as { [key: string]: TermThemeType },
+     connections: {},
+     bookmarks: {},
++    filebookmarks: {},
+     waveai: waveaiJson as unknown as { [key: string]: AIModeConfigType },
+     backgrounds: backgroundsJson as { [key: string]: BackgroundConfigType },
+     configerrors: [],
++    version: "",
++    buildtime: "",
+ };
+diff --git a/frontend/types/gotypes.d.ts b/frontend/types/gotypes.d.ts
+index c5b870d7..29719f47 100644
+--- a/frontend/types/gotypes.d.ts
++++ b/frontend/types/gotypes.d.ts
+@@ -924,6 +924,23 @@ declare global {
+         suggestions: SuggestionType[];
+     };
+ 
++    // wconfig.FileBookmark
++    type FileBookmark = {
++        "display:order"?: number;
++        bookmarktype: string;
++        label: string;
++        path: string;
++        connection?: string;
++        anchor?: string;
++        line?: number;
++    };
++
++    // wshrpc.FileBookmarkSetRequest
++    type FileBookmarkSetRequest = {
++        key: string;
++        bookmark: FileBookmark;
++    };
++
+     // wshrpc.FileCopyOpts
+     type FileCopyOpts = {
+         overwrite?: boolean;
+@@ -1018,6 +1035,7 @@ declare global {
+         termthemes: {[key: string]: TermThemeType};
+         connections: {[key: string]: ConnKeywords};
+         bookmarks: {[key: string]: WebBookmark};
++        filebookmarks: {[key: string]: FileBookmark};
+         waveai: {[key: string]: AIModeConfigType};
+         configerrors: ConfigError[];
+         version: string;
+@@ -1589,6 +1607,7 @@ declare global {
+         "debug:panictype"?: string;
+         "block:view"?: string;
+         "block:controller"?: string;
++        "block:subblock"?: boolean;
+         "ai:backendtype"?: string;
+         "ai:local"?: boolean;
+         "wsh:cmd"?: string;
+diff --git a/pkg/wconfig/defaultconfig/filebookmarks.json b/pkg/wconfig/defaultconfig/filebookmarks.json
+new file mode 100644
+index 00000000..b868578a
+--- /dev/null
++++ b/pkg/wconfig/defaultconfig/filebookmarks.json
+@@ -0,0 +1,7 @@
++{
++    "home": { "bookmarktype": "folder", "label": "Home", "path": "~", "display:order": 1 },
++    "desktop": { "bookmarktype": "folder", "label": "Desktop", "path": "~/Desktop", "display:order": 2 },
++    "downloads": { "bookmarktype": "folder", "label": "Downloads", "path": "~/Downloads", "display:order": 3 },
++    "documents": { "bookmarktype": "folder", "label": "Documents", "path": "~/Documents", "display:order": 4 },
++    "root": { "bookmarktype": "folder", "label": "Root", "path": "/", "display:order": 5 }
++}
+diff --git a/pkg/wconfig/filebookmarks_test.go b/pkg/wconfig/filebookmarks_test.go
+new file mode 100644
+index 00000000..c08af46d
+--- /dev/null
++++ b/pkg/wconfig/filebookmarks_test.go
+@@ -0,0 +1,46 @@
++// Copyright 2026, Command Line Inc.
++// SPDX-License-Identifier: Apache-2.0
++
++package wconfig
++
++import (
++	"testing"
++
++	"github.com/wavetermdev/waveterm/pkg/waveobj"
++)
++
++func TestUpsertFileBookmarkInMap(t *testing.T) {
++	m := make(waveobj.MetaMapType)
++	m, err := UpsertFileBookmarkInMap(m, "k1", FileBookmark{BookmarkType: "folder", Label: "Home", Path: "~", DisplayOrder: 1})
++	if err != nil {
++		t.Fatalf("unexpected error: %v", err)
++	}
++	entry := m.GetMap("k1")
++	if entry == nil {
++		t.Fatalf("expected entry for k1")
++	}
++	if entry["path"] != "~" || entry["bookmarktype"] != "folder" {
++		t.Fatalf("unexpected entry: %#v", entry)
++	}
++
++	m, err = UpsertFileBookmarkInMap(m, "k1", FileBookmark{BookmarkType: "folder", Label: "Home2", Path: "~/x", DisplayOrder: 1})
++	if err != nil {
++		t.Fatalf("unexpected error: %v", err)
++	}
++	if m.GetMap("k1")["label"] != "Home2" {
++		t.Fatalf("expected upsert to overwrite label")
++	}
++}
++
++func TestRemoveFileBookmarkInMap(t *testing.T) {
++	m := make(waveobj.MetaMapType)
++	m, _ = UpsertFileBookmarkInMap(m, "k1", FileBookmark{Label: "a", Path: "~"})
++	m, _ = UpsertFileBookmarkInMap(m, "k2", FileBookmark{Label: "b", Path: "/"})
++	m = RemoveFileBookmarkInMap(m, "k1")
++	if m.GetMap("k1") != nil {
++		t.Fatalf("expected k1 removed")
++	}
++	if m.GetMap("k2") == nil {
++		t.Fatalf("expected k2 preserved")
++	}
++}
+diff --git a/pkg/wconfig/settingsconfig.go b/pkg/wconfig/settingsconfig.go
+index 67118b16..93a94bc8 100644
+--- a/pkg/wconfig/settingsconfig.go
++++ b/pkg/wconfig/settingsconfig.go
+@@ -26,6 +26,7 @@ import (
+ const SettingsFile = "settings.json"
+ const ConnectionsFile = "connections.json"
+ const ProfilesFile = "profiles.json"
++const FileBookmarksFile = "filebookmarks.json"
+ 
+ var configWriteLock sync.Mutex
+ 
+@@ -283,6 +284,16 @@ type WebBookmark struct {
+ 	DisplayOrder float64 `json:"display:order,omitempty"`
+ }
+ 
++type FileBookmark struct {
++	DisplayOrder float64 `json:"display:order,omitempty"`
++	BookmarkType string  `json:"bookmarktype"`
++	Label        string  `json:"label"`
++	Path         string  `json:"path"`
++	Connection   string  `json:"connection,omitempty"`
++	Anchor       string  `json:"anchor,omitempty"`
++	Line         int     `json:"line,omitempty"`
++}
++
+ // Wave AI panel mode configuration (NEW)
+ type AIModeConfigType struct {
+ 	DisplayName        string   `json:"display:name"`
+@@ -375,6 +386,7 @@ type FullConfigType struct {
+ 	TermThemes     map[string]TermThemeType        `json:"termthemes"`
+ 	Connections    map[string]ConnKeywords         `json:"connections"`
+ 	Bookmarks      map[string]WebBookmark          `json:"bookmarks"`
++	FileBookmarks  map[string]FileBookmark         `json:"filebookmarks"`
+ 	WaveAIModes    map[string]AIModeConfigType     `json:"waveai"`
+ 	ConfigErrors   []ConfigError                   `json:"configerrors" configfile:"-"`
+ 	Version        string                          `json:"version" configfile:"-"`
+@@ -899,6 +911,51 @@ func SetConnectionsConfigValue(connName string, toMerge waveobj.MetaMapType) err
+ 	return WriteWaveHomeConfigFile(ConnectionsFile, m)
+ }
+ 
++func UpsertFileBookmarkInMap(m waveobj.MetaMapType, key string, bookmark FileBookmark) (waveobj.MetaMapType, error) {
++	if m == nil {
++		m = make(waveobj.MetaMapType)
++	}
++	barr, err := json.Marshal(bookmark)
++	if err != nil {
++		return nil, fmt.Errorf("cannot marshal bookmark: %w", err)
++	}
++	var bmMap map[string]any
++	if err := json.Unmarshal(barr, &bmMap); err != nil {
++		return nil, fmt.Errorf("cannot unmarshal bookmark: %w", err)
++	}
++	m[key] = bmMap
++	return m, nil
++}
++
++func RemoveFileBookmarkInMap(m waveobj.MetaMapType, key string) waveobj.MetaMapType {
++	if m == nil {
++		return make(waveobj.MetaMapType)
++	}
++	delete(m, key)
++	return m
++}
++
++func SetFileBookmarkConfigValue(key string, bookmark FileBookmark) error {
++	m, cerrs := ReadWaveHomeConfigFile(FileBookmarksFile)
++	if len(cerrs) > 0 {
++		return fmt.Errorf("error reading config file: %v", cerrs[0])
++	}
++	m, err := UpsertFileBookmarkInMap(m, key, bookmark)
++	if err != nil {
++		return err
++	}
++	return WriteWaveHomeConfigFile(FileBookmarksFile, m)
++}
++
++func DeleteFileBookmarkConfigValue(key string) error {
++	m, cerrs := ReadWaveHomeConfigFile(FileBookmarksFile)
++	if len(cerrs) > 0 {
++		return fmt.Errorf("error reading config file: %v", cerrs[0])
++	}
++	m = RemoveFileBookmarkInMap(m, key)
++	return WriteWaveHomeConfigFile(FileBookmarksFile, m)
++}
++
+ func MigratePresetsBackgrounds() {
+ 	configDirAbsPath := wavebase.GetWaveConfigDir()
+ 	backgroundsFile := filepath.Join(configDirAbsPath, "backgrounds.json")
+diff --git a/pkg/wshrpc/wshclient/wshclient.go b/pkg/wshrpc/wshclient/wshclient.go
+index d5333aec..a2d6ce69 100644
+--- a/pkg/wshrpc/wshclient/wshclient.go
++++ b/pkg/wshrpc/wshclient/wshclient.go
+@@ -215,6 +215,12 @@ func DeleteBuilderCommand(w *wshutil.WshRpc, data string, opts *wshrpc.RpcOpts)
+ 	return err
+ }
+ 
++// command "deletefilebookmark", wshserver.DeleteFileBookmarkCommand
++func DeleteFileBookmarkCommand(w *wshutil.WshRpc, data string, opts *wshrpc.RpcOpts) error {
++	_, err := sendRpcRequestCallHelper[any](w, "deletefilebookmark", data, opts)
++	return err
++}
++
+ // command "deletesubblock", wshserver.DeleteSubBlockCommand
+ func DeleteSubBlockCommand(w *wshutil.WshRpc, data wshrpc.CommandDeleteBlockData, opts *wshrpc.RpcOpts) error {
+ 	_, err := sendRpcRequestCallHelper[any](w, "deletesubblock", data, opts)
+@@ -848,6 +854,12 @@ func SetConnectionsConfigCommand(w *wshutil.WshRpc, data wshrpc.ConnConfigReques
+ 	return err
+ }
+ 
++// command "setfilebookmark", wshserver.SetFileBookmarkCommand
++func SetFileBookmarkCommand(w *wshutil.WshRpc, data wshrpc.FileBookmarkSetRequest, opts *wshrpc.RpcOpts) error {
++	_, err := sendRpcRequestCallHelper[any](w, "setfilebookmark", data, opts)
++	return err
++}
++
+ // command "setmeta", wshserver.SetMetaCommand
+ func SetMetaCommand(w *wshutil.WshRpc, data wshrpc.CommandSetMetaData, opts *wshrpc.RpcOpts) error {
+ 	_, err := sendRpcRequestCallHelper[any](w, "setmeta", data, opts)
+diff --git a/pkg/wshrpc/wshrpctypes.go b/pkg/wshrpc/wshrpctypes.go
+index 51e2338b..e636889d 100644
+--- a/pkg/wshrpc/wshrpctypes.go
++++ b/pkg/wshrpc/wshrpctypes.go
+@@ -76,6 +76,8 @@ type WshRpcInterface interface {
+ 	TestMultiArgCommand(ctx context.Context, arg1 string, arg2 int, arg3 bool) (string, error)
+ 	SetConfigCommand(ctx context.Context, data MetaSettingsType) error
+ 	SetConnectionsConfigCommand(ctx context.Context, data ConnConfigRequest) error
++	SetFileBookmarkCommand(ctx context.Context, data FileBookmarkSetRequest) error
++	DeleteFileBookmarkCommand(ctx context.Context, key string) error
+ 	GetFullConfigCommand(ctx context.Context) (wconfig.FullConfigType, error)
+ 	GetWaveAIModeConfigCommand(ctx context.Context) (wconfig.AIModeConfigUpdate, error)
+ 	BlockInfoCommand(ctx context.Context, blockId string) (*BlockInfoData, error)
+@@ -413,6 +415,11 @@ type ConnConfigRequest struct {
+ 	MetaMapType waveobj.MetaMapType `json:"metamaptype"`
+ }
+ 
++type FileBookmarkSetRequest struct {
++	Key      string               `json:"key"`
++	Bookmark wconfig.FileBookmark `json:"bookmark"`
++}
++
+ type ConnStatus struct {
+ 	Status                        string `json:"status"`
+ 	ConnHealthStatus              string `json:"connhealthstatus,omitempty"`
+diff --git a/pkg/wshrpc/wshserver/wshserver.go b/pkg/wshrpc/wshserver/wshserver.go
+index 38006fd9..14de180c 100644
+--- a/pkg/wshrpc/wshserver/wshserver.go
++++ b/pkg/wshrpc/wshserver/wshserver.go
+@@ -559,6 +559,20 @@ func (ws *WshServer) SetConnectionsConfigCommand(ctx context.Context, data wshrp
+ 	return wconfig.SetConnectionsConfigValue(data.Host, data.MetaMapType)
+ }
+ 
++func (ws *WshServer) SetFileBookmarkCommand(ctx context.Context, data wshrpc.FileBookmarkSetRequest) error {
++	if data.Key == "" {
++		return fmt.Errorf("key is required")
++	}
++	return wconfig.SetFileBookmarkConfigValue(data.Key, data.Bookmark)
++}
++
++func (ws *WshServer) DeleteFileBookmarkCommand(ctx context.Context, key string) error {
++	if key == "" {
++		return fmt.Errorf("key is required")
++	}
++	return wconfig.DeleteFileBookmarkConfigValue(key)
++}
++
+ func (ws *WshServer) GetFullConfigCommand(ctx context.Context) (wconfig.FullConfigType, error) {
+ 	watcher := wconfig.GetWatcher()
+ 	return watcher.GetFullConfig(), nil

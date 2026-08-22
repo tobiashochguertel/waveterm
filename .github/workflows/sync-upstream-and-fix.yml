@@ -34,6 +34,19 @@ env:
     frontend/app/view/term/term.tsx
     frontend/app/view/webview/webview.tsx
     frontend/app/block/block.tsx
+    frontend/app/element/markdown.tsx
+    frontend/app/modals/modalregistry.tsx
+    frontend/app/store/wshclientapi.ts
+    frontend/app/view/preview/preview-directory.tsx
+    frontend/app/view/preview/preview-edit.tsx
+    frontend/app/view/preview/preview-markdown.tsx
+    frontend/app/view/preview/preview-model.tsx
+    frontend/preview/mock/defaultconfig.ts
+    frontend/types/gotypes.d.ts
+    pkg/wconfig/settingsconfig.go
+    pkg/wshrpc/wshclient/wshclient.go
+    pkg/wshrpc/wshrpctypes.go
+    pkg/wshrpc/wshserver/wshserver.go
 
 jobs:
   # ── Stable: sync main from latest upstream release tag ────────────────────
@@ -252,13 +265,14 @@ jobs:
       - name: Commit patches
         if: steps.check-uptodate.outputs.up_to_date != 'true'
         run: |
-          git add frontend/
+          git add frontend/ pkg/
           git diff --cached --quiet || git commit -m "fix: re-apply custom patches after upstream merge
 
           Patches applied:
           - 001-xterm-cursor-fix.patch (macOptionClickForcesSelection)
           - 002-bookmark-typeahead-fix.patch (PR #3420)
           - 003-focus-fix.patch (PR #3429)
+          - 004-file-explorer-bookmarks.patch (PR #3443)
 
           Co-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
 
@@ -281,4 +295,5 @@ jobs:
             echo "  - 001-xterm-cursor-fix.patch" >> "$GITHUB_STEP_SUMMARY"
             echo "  - 002-bookmark-typeahead-fix.patch" >> "$GITHUB_STEP_SUMMARY"
             echo "  - 003-focus-fix.patch" >> "$GITHUB_STEP_SUMMARY"
+            echo "  - 004-file-explorer-bookmarks.patch" >> "$GITHUB_STEP_SUMMARY"
           fi

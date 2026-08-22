@@ -51,6 +51,20 @@ PATCHED_FILES = {
     "frontend/app/view/term/term.tsx",
     "frontend/app/view/webview/webview.tsx",
     "frontend/app/block/block.tsx",
+    # PR #3443 — file explorer bookmarks
+    "frontend/app/element/markdown.tsx",
+    "frontend/app/modals/modalregistry.tsx",
+    "frontend/app/store/wshclientapi.ts",
+    "frontend/app/view/preview/preview-directory.tsx",
+    "frontend/app/view/preview/preview-edit.tsx",
+    "frontend/app/view/preview/preview-markdown.tsx",
+    "frontend/app/view/preview/preview-model.tsx",
+    "frontend/preview/mock/defaultconfig.ts",
+    "frontend/types/gotypes.d.ts",
+    "pkg/wconfig/settingsconfig.go",
+    "pkg/wshrpc/wshclient/wshclient.go",
+    "pkg/wshrpc/wshrpctypes.go",
+    "pkg/wshrpc/wshserver/wshserver.go",
 }
 
 # Files that are conflict-prone in upstream (frequently changed, config schemas)
@@ -67,6 +81,7 @@ CONFLICT_PRONE_FILES = {
 
 # PRs already integrated in this fork
 ALREADY_INTEGRATED = {
+    3443: ("File explorer bookmarks (folder / file / document-position)", "dev.patch", "004-file-explorer-bookmarks.patch"),
     3429: ("fix: stop a de-focusing block from re-grabbing focus", "dev.patch", "003-focus-fix.patch"),
     3420: ("Fix bookmark typeahead not rendering suggestions", "dev.patch", "002-bookmark-typeahead-fix.patch"),
 }
