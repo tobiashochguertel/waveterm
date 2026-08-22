@@ -31,6 +31,8 @@ jobs:
 
       - name: Generate catalog
         run: uv run --script .github/scripts/generate_upstream_prs.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Commit if changed
         run: |
