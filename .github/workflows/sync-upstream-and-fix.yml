@@ -36,7 +36,7 @@ jobs:
 
     steps:
       - name: Checkout fork main
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: main
           fetch-depth: 0
@@ -48,7 +48,9 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v10
+        with:
+          enable-cache: false
 
       - name: Add upstream remote
         run: |
@@ -148,7 +150,7 @@ jobs:
 
     steps:
       - name: Checkout fork dev
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: dev
           fetch-depth: 0
@@ -160,7 +162,9 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v10
+        with:
+          enable-cache: false
 
       - name: Add upstream remote
         run: |
