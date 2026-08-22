@@ -8,7 +8,7 @@ mergeable with upstream using a **revert-then-repatch** strategy.
 | Branch | Tracks | Purpose |
 |--------|--------|---------|
 | `main` | Latest upstream release tag (e.g. `v0.14.5`) | Stable — well-tested patches only |
-| `dev`  | `upstream/main` (latest development) | Unstable — experimental patches welcome |
+| `dev.patch` | `upstream/main` (latest development) | Unstable — experimental patches welcome |
 
 ## Upstream PR catalog
 
@@ -39,9 +39,12 @@ via `widgets.json` at runtime. They don't touch the WaveTerm source tree.
 Actual changes to upstream source files. These are the only things that risk
 merge conflicts. Each patch has:
 
-1. **A PEP 723 script** in `.github/scripts/` that applies the patch idempotently
-2. **An entry in `PATCHED_FILES`** in the sync workflow env var
-3. **A re-apply step** in `.github/workflows/sync-upstream-and-fix.yml`
+1. **A `.patch` file** in `.github/patches/` (named `NNN-description.patch`)
+2. **An entry in `PATCHED_FILES`** in the sync workflow env var (modified files only — new files don't need listing)
+3. **An entry in `ALREADY_INTEGRATED`** in `.github/scripts/generate_upstream_prs.py` (for the PR catalog)
+
+Patches are applied by `.github/scripts/apply_patches.sh`, which loops over
+all `.patch` files in `.github/patches/` in alphabetical order.
 
 Current patches:
 
@@ -54,15 +57,50 @@ Current patches:
 
 ## How the sync works
 
-The `sync-upstream-and-fix.yml` workflow runs daily at 07:00 UTC (or manually):
+The `sync-upstream-and-fix.yml` workflow runs daily at 07:00 UTC (or manually).
+It syncs both branches in parallel — `main` from the latest upstream release
+tag, `dev.patch` from `upstream/main`.
 
-```
-1. Revert all PATCHED_FILES to upstream's version → commit
-2. Merge upstream (normal merge, no strategy override)
-3. If merge conflicts on non-patched files → FAIL LOUDLY
-4. Re-apply each patch via `uv run --script .github/scripts/apply_*.py`
-5. If a patch script's pattern doesn't match → FAIL LOUDLY
-6. Push the updated branch
+### The revert-then-repatch sequence
+
+For each branch, the workflow executes these steps:
+
+```bash
+# 1. Fetch upstream
+git remote add upstream https://github.com/wavetermdev/waveterm.git
+git fetch upstream --tags --quiet
+
+# 2. Determine what to merge
+#    main:       latest upstream release tag (e.g. v0.14.5)
+#    dev.patch:  upstream/main
+
+# 3. Skip if already up to date
+git merge-base --is-ancestor "$UPSTREAM_SHA" HEAD  # → nothing to do
+
+# 4. Revert all PATCHED_FILES to upstream's version, then commit
+#    This removes our custom changes from the working tree so the merge
+#    won't conflict on those files.
+.github/scripts/revert_patched_files.sh "$UPSTREAM_SHA" "$MERGE_REF"
+#    → git checkout "$UPSTREAM_SHA" -- <each patched file>
+#    → git commit -m "chore: revert patched files to upstream …"
+
+# 5. Merge upstream (normal merge, no strategy override)
+git merge "$MERGE_REF" --no-edit -m "chore: merge upstream …"
+#    If this conflicts on non-patched files → FAIL LOUDLY (merge --abort, exit 1)
+
+# 6. Re-apply all patches via apply_patches.sh
+.github/scripts/apply_patches.sh
+#    For each .github/patches/*.patch:
+#      - If git apply --reverse --check passes → already applied, skip
+#      - If git apply --check passes → git apply, continue
+#      - Otherwise → FAIL LOUDLY (exit 1)
+
+# 7. Commit the re-applied patches
+git add frontend/ pkg/
+git commit -m "fix: re-apply custom patches after upstream merge …"
+
+# 8. Push
+git push origin <branch>
 ```
 
 ### Why revert-then-repatch instead of `--strategy-option=theirs`?
@@ -71,55 +109,104 @@ The `sync-upstream-and-fix.yml` workflow runs daily at 07:00 UTC (or manually):
 The revert-then-repatch approach:
 
 - **Guarantees patches are always re-applied** on the latest upstream code
-- **Fails loudly** if upstream changed the surrounding code (pattern mismatch)
+- **Fails loudly** if upstream changed the surrounding code (`git apply` fails)
 - **Fails loudly** if there are conflicts on files we don't patch
 - **Never silently drops** a custom change
 
+### Helper scripts
+
+| Script | Purpose |
+|--------|---------|
+| `.github/scripts/revert_patched_files.sh` | Checks out each `PATCHED_FILES` entry from the upstream SHA, commits the revert |
+| `.github/scripts/apply_patches.sh` | Loops over `.github/patches/*.patch`, applies each with idempotency check |
+
 ## Adding a new patch
 
-1. **Write the patch script** as a PEP 723 file in `.github/scripts/`:
+### 1. Find the PR and generate the `.patch` file
 
-   ```python
-   #!/usr/bin/env -S uv run --script
-   # /// script
-   # requires-python = ">=3.11"
-   # dependencies = []
-   # ///
-   """Fix: <description>. Idempotent. Ref: <upstream issue/PR>"""
-   import sys
-   from pathlib import Path
+```bash
+# Fetch the PR branch
+git remote add upstream https://github.com/wavetermdev/waveterm.git  # if not already present
+git fetch upstream pull/<PR_NUMBER>/head:pr-<PR_NUMBER>
 
-   TARGET = Path("path/to/file.tsx")
-   content = TARGET.read_text()
+# Find the merge base (the commit the PR was based on)
+MERGE_BASE=$(git merge-base pr-<PR_NUMBER> upstream/main)
 
-   # Idempotency check
-   if "unique marker string from the patch" in content:
-       print(f"✅ already patched in {TARGET}")
-       sys.exit(0)
+# Generate the patch
+git diff "$MERGE_BASE"..pr-<PR_NUMBER> > .github/patches/NNN-description.patch
+```
 
-   # Apply patch
-   OLD = "exact string to find"
-   NEW = "replacement string"
-   if OLD not in content:
-       print(f"❌ pattern not found in {TARGET} — upstream may have changed it")
-       sys.exit(1)
-   TARGET.write_text(content.replace(OLD, NEW, 1))
-   print(f"✅ patched {TARGET}")
-   ```
+### 2. Test the patch applies cleanly
 
-2. **Add the file to `PATCHED_FILES`** in `.github/workflows/sync-upstream-and-fix.yml`
+```bash
+# Dry-run
+git apply --check .github/patches/NNN-description.patch
 
-3. **Add re-apply + commit steps** to the relevant job(s) in the workflow
+# Apply for real
+git apply .github/patches/NNN-description.patch
 
-4. **Apply the patch manually** to the branch (`uv run --script .github/scripts/apply_*.py`)
+# Verify the build
+npm run build:dev          # frontend
+go build ./pkg/...         # backend
+go test ./pkg/...          # tests
 
-5. **Commit and push**
+# Verify idempotency (reverse check should pass)
+git apply --reverse --check .github/patches/NNN-description.patch
+
+# Verify apply_patches.sh works with the new patch
+.github/scripts/apply_patches.sh
+```
+
+### 3. Add modified files to `PATCHED_FILES`
+
+In `.github/workflows/sync-upstream-and-fix.yml`, add each **modified** file
+(not new files — those don't exist in upstream and don't need reverting) to
+the `PATCHED_FILES` env var:
+
+```yaml
+env:
+  PATCHED_FILES: |
+    frontend/app/view/term/term.tsx
+    frontend/app/view/webview/webview.tsx
+    ...
+    path/to/new/modified/file.tsx   # ← add here
+```
+
+### 4. Register the PR in the catalog
+
+In `.github/scripts/generate_upstream_prs.py`, add an entry to
+`ALREADY_INTEGRATED`:
+
+```python
+ALREADY_INTEGRATED = {
+    ...
+    <PR_NUMBER>: ("PR title", "dev.patch", "NNN-description.patch"),
+}
+```
+
+If the PR touches files that are frequently changed in upstream or hold config
+schemas, also add them to `CONFLICT_PRONE_FILES`.
+
+### 5. Update the workflow commit message
+
+In `.github/workflows/sync-upstream-and-fix.yml`, add the new patch to the
+"Commit patches" step message and the summary step, so the workflow output
+lists all patches applied.
+
+### 6. Commit and push
+
+```bash
+git add -A
+git commit -m "feat: integrate PR #<NNN> <description> via .patch"
+git push origin dev.patch
+```
 
 ## Rules
 
-- **Never edit upstream files directly** — always via a patch script
+- **Never edit upstream files directly** — always via a `.patch` file
 - **Never use `--strategy-option=theirs`** — it silently drops changes
-- **Keep patches minimal** — one logical change per script
-- **Make scripts idempotent** — check if the patch is already present
-- **Fail loudly** — `sys.exit(1)` with a clear message if patterns don't match
-- **Test locally** before pushing: `uv run --script .github/scripts/apply_*.py`
+- **Keep patches minimal** — one logical change per `.patch` file
+- **Name patches with zero-padded numbers** — `NNN-description.patch` (applied in alphabetical order)
+- **Only list modified files in `PATCHED_FILES`** — new files don't need reverting
+- **Test locally** before pushing: `git apply --check`, `npm run build:dev`, `go build ./pkg/...`
+- **Verify idempotency** — `git apply --reverse --check` must pass (so `apply_patches.sh` can detect already-applied patches)
