@@ -33,6 +33,7 @@ env:
   PATCHED_FILES: |
     frontend/app/view/term/term.tsx
     frontend/app/view/webview/webview.tsx
+    frontend/app/block/block.tsx
 
 jobs:
   # ── Stable: sync main from latest upstream release tag ────────────────────
@@ -62,6 +63,7 @@ jobs:
           cache-dependency-glob: |
             .github/scripts/apply_xterm_fix.py
             .github/scripts/apply_bookmark_fix.py
+            .github/scripts/apply_focus_fix.py
           cache-suffix: ${{ github.job }}
 
       - name: Add upstream remote
@@ -200,6 +202,7 @@ jobs:
           cache-dependency-glob: |
             .github/scripts/apply_xterm_fix.py
             .github/scripts/apply_bookmark_fix.py
+            .github/scripts/apply_focus_fix.py
           cache-suffix: ${{ github.job }}
 
       - name: Add upstream remote
@@ -316,6 +319,26 @@ jobs:
           Co-authored-by: Tobias Hochgürtel <tobias.hochguertel@googlemail.com>
           Co-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
 
+      - name: Re-apply focus fix
+        if: steps.check-uptodate.outputs.up_to_date != 'true'
+        run: uv run --script .github/scripts/apply_focus_fix.py
+
+      - name: Commit focus fix
+        if: steps.check-uptodate.outputs.up_to_date != 'true'
+        run: |
+          git add frontend/app/block/block.tsx
+          git diff --cached --quiet || git commit -m "fix(block): stop de-focusing block from re-grabbing focus
+
+          When clicking from one web block to another, both webviews become
+          unresponsive because the de-focusing block re-grabs DOM and logical
+          focus (webview-focus flap). Add guards so the de-focusing block only
+          acts when it actually has focus.
+
+          Ref: wavetermdev/waveterm#3429
+
+          Co-authored-by: Tobias Hochgürtel <tobias.hochguertel@googlemail.com>
+          Co-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
+
       - name: Push updated dev
         if: steps.check-uptodate.outputs.up_to_date != 'true'
         run: git push origin dev
@@ -334,4 +357,5 @@ jobs:
             echo "- Patched files reverted to upstream, then re-applied:" >> "$GITHUB_STEP_SUMMARY"
             echo "  - \`frontend/app/view/term/term.tsx\` (xterm cursor fix)" >> "$GITHUB_STEP_SUMMARY"
             echo "  - \`frontend/app/view/webview/webview.tsx\` (bookmark typeahead fix)" >> "$GITHUB_STEP_SUMMARY"
+            echo "  - \`frontend/app/block/block.tsx\` (focus fix)" >> "$GITHUB_STEP_SUMMARY"
           fi
