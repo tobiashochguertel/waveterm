@@ -18,14 +18,14 @@ evaluated for integration into the fork via the `.patch` strategy.
 ## Already integrated
 
 | PR | Title | Size | Files | Branch | Patch file |
-|----|-------|------|-------|--------|------------|
+|----|----|----|----|----|----|
 | [#3420](https://github.com/wavetermdev/waveterm/pull/3420) | Fix bookmark typeahead not rendering suggestions | +4/-4 | `frontend/app/view/webview/webview.tsx` | `dev.patch` | `002-bookmark-typeahead-fix.patch` |
 | [#3429](https://github.com/wavetermdev/waveterm/pull/3429) | fix: stop a de-focusing block from re-grabbing focus | +6/-2 | `frontend/app/block/block.tsx` | `dev.patch` | `003-focus-fix.patch` |
 
 ### Tier 1 — Zero risk (pure bugfixes, tiny, single-file)
 
 | PR | Title | Size | Files | Risk | .patch fit |
-|----|-------|------|-------|------|------------|
+|----|----|----|----|----|----|
 | [#3413](https://github.com/wavetermdev/waveterm/pull/3413) | fix(webview): respect system color scheme for prefers-color-scheme in web blocks | +1/-1 | `emain/emain.ts` | Zero | Excellent |
 | [#3419](https://github.com/wavetermdev/waveterm/pull/3419) | fix(wsh): prevent deleteblock from silently ignoring positional arguments | +3/-1 | `cmd/wsh/cmd/wshcmd-deleteblock.go` | Zero | Excellent |
 | [#3455](https://github.com/wavetermdev/waveterm/pull/3455) | fix(web): add missing returns after http.Error in handlers | +5/-0 | `pkg/web/web.go` | Zero | Excellent |
@@ -35,7 +35,7 @@ evaluated for integration into the fork via the `.patch` strategy.
 ### Tier 2 — Low risk (small, isolated)
 
 | PR | Title | Size | Files | Risk | .patch fit |
-|----|-------|------|-------|------|------------|
+|----|----|----|----|----|----|
 | [#3186](https://github.com/wavetermdev/waveterm/pull/3186) | ci: enable Windows ARM64 build in GitHub Actions | +5/-4 | `.github/workflows/build-helper.yml`, `Taskfile.yml` | Low | Great |
 | [#3339](https://github.com/wavetermdev/waveterm/pull/3339) | Fix Korean IME space handling on Windows | +12/-0 | `frontend/app/view/term/term-model.ts` | Low | Great |
 | [#3278](https://github.com/wavetermdev/waveterm/pull/3278) | fix(UI)): ensure terminal theme application via xterm theme setter | +10/-2 | `frontend/app/view/term/termtheme.ts`, `frontend/app/view/term/termwrap.ts` | Low | Great |
@@ -56,78 +56,78 @@ evaluated for integration into the fork via the `.patch` strategy.
 ### Tier 3 — Medium risk (overlaps or touches conflict-prone files)
 
 | PR | Title | Size | Files | Risk | .patch fit |
-|----|-------|------|-------|------|------------|
+|----|----|----|----|----|----|
 | [#3270](https://github.com/wavetermdev/waveterm/pull/3270) | fix minor scroll bug with telemetry required page | +2/-1 | `frontend/app/aipanel/telemetryrequired.tsx`, `frontend/types/gotypes.d.ts` | Medium | Caution — config schema changes |
-| [#2461](https://github.com/wavetermdev/waveterm/pull/2461) | Fix/terminal background color detection | +7/-3 | 3 files (`frontend/app/view/codeeditor/codeeditor.tsx`, ...) | Medium | Caution |
-| [#3407](https://github.com/wavetermdev/waveterm/pull/3407) | Preserve all windows/workspaces on close, not just the last one | +12/-1 | 7 files (`docs/docs/config.mdx`, ...) | Medium | Caution — config schema changes |
-| [#3457](https://github.com/wavetermdev/waveterm/pull/3457) | feat(config): add macOS vibrancy state setting | +17/-0 | 6 files (`docs/docs/config.mdx`, ...) | Medium | Caution — config schema changes |
-| [#2406](https://github.com/wavetermdev/waveterm/pull/2406) | wsh => wave | +18/-1 | 4 files (`pkg/remote/connutil.go`, ...) | Medium | Caution |
-| [#3308](https://github.com/wavetermdev/waveterm/pull/3308) | add Cmd+, shortcut to open Settings, Esc to close | +24/-0 | 3 files (`docs/docs/keybindings.mdx`, ...) | Medium | Caution |
+| [#2461](https://github.com/wavetermdev/waveterm/pull/2461) | Fix/terminal background color detection | +7/-3 | `frontend/app/view/codeeditor/codeeditor.tsx`, `frontend/app/view/preview/preview-edit.tsx`, … _+1 more_ | Medium | Caution |
+| [#3407](https://github.com/wavetermdev/waveterm/pull/3407) | Preserve all windows/workspaces on close, not just the last one | +12/-1 | `docs/docs/config.mdx`, `emain/emain-window.ts`, … _+5 more_ | Medium | Caution — config schema changes |
+| [#3457](https://github.com/wavetermdev/waveterm/pull/3457) | feat(config): add macOS vibrancy state setting | +17/-0 | `docs/docs/config.mdx`, `emain/emain-window.ts`, … _+4 more_ | Medium | Caution — config schema changes |
+| [#2406](https://github.com/wavetermdev/waveterm/pull/2406) | wsh => wave | +18/-1 | `pkg/remote/connutil.go`, `pkg/util/shellutil/shellutil.go`, … _+2 more_ | Medium | Caution |
+| [#3308](https://github.com/wavetermdev/waveterm/pull/3308) | add Cmd+, shortcut to open Settings, Esc to close | +24/-0 | `docs/docs/keybindings.mdx`, `frontend/app/element/quicktips.tsx`, … _+1 more_ | Medium | Caution |
 | [#3358](https://github.com/wavetermdev/waveterm/pull/3358) | fix: support OAuth/SSO auth flows in webview blocks | +25/-0 | `emain/emain-tabview.ts`, `frontend/app/view/webview/webview.tsx` | Medium | Caution — overlaps existing patch |
-| [#3440](https://github.com/wavetermdev/waveterm/pull/3440) | add preview:openfileinnewblock setting to open files in a new block from directory preview | +36/-6 | 7 files (`docs/docs/config.mdx`, ...) | Medium | Caution — config schema changes |
-| [#3117](https://github.com/wavetermdev/waveterm/pull/3117) | feat: add tab:newtablayout setting for custom new tab layouts | +42/-1 | 3 files (`pkg/wconfig/settingsconfig.go`, ...) | Medium | Caution — config schema changes |
-| [#2858](https://github.com/wavetermdev/waveterm/pull/2858) | fix: terminal scroll preservation on tab switch and alt buffer exit | +40/-4 | 3 files (`emain/emain-window.ts`, ...) | Medium | Caution |
-| [#3280](https://github.com/wavetermdev/waveterm/pull/3280) | feat: support Windows right-click context menu to open directory | +52/-3 | 4 files (`emain/emain-window.ts`, ...) | Medium | Caution |
-| [#2678](https://github.com/wavetermdev/waveterm/pull/2678) | Add confirmation dialog before closing tabs | +50/-5 | 4 files (`frontend/app/modals/confirmclosetab.tsx`, ...) | Medium | Caution |
-| [#3058](https://github.com/wavetermdev/waveterm/pull/3058) | feat: close window when last terminal exits (term:closeonlasttermclose) | +56/-2 | 5 files (`frontend/types/gotypes.d.ts`, ...) | Medium | Caution — config schema changes |
+| [#3440](https://github.com/wavetermdev/waveterm/pull/3440) | add preview:openfileinnewblock setting to open files in a new block from directory preview | +36/-6 | `docs/docs/config.mdx`, `frontend/app/view/preview/preview-directory.tsx`, … _+5 more_ | Medium | Caution — config schema changes |
+| [#3117](https://github.com/wavetermdev/waveterm/pull/3117) | feat: add tab:newtablayout setting for custom new tab layouts | +42/-1 | `pkg/wconfig/settingsconfig.go`, `pkg/wcore/workspace.go`, … _+1 more_ | Medium | Caution — config schema changes |
+| [#2858](https://github.com/wavetermdev/waveterm/pull/2858) | fix: terminal scroll preservation on tab switch and alt buffer exit | +40/-4 | `emain/emain-window.ts`, `frontend/app/view/term/osc-handlers.ts`, … _+1 more_ | Medium | Caution |
+| [#3280](https://github.com/wavetermdev/waveterm/pull/3280) | feat: support Windows right-click context menu to open directory | +52/-3 | `emain/emain-window.ts`, `emain/emain.ts`, … _+2 more_ | Medium | Caution |
+| [#2678](https://github.com/wavetermdev/waveterm/pull/2678) | Add confirmation dialog before closing tabs | +50/-5 | `frontend/app/modals/confirmclosetab.tsx`, `frontend/app/modals/modalregistry.tsx`, … _+2 more_ | Medium | Caution |
+| [#3058](https://github.com/wavetermdev/waveterm/pull/3058) | feat: close window when last terminal exits (term:closeonlasttermclose) | +56/-2 | `frontend/types/gotypes.d.ts`, `pkg/blockcontroller/shellcontroller.go`, … _+3 more_ | Medium | Caution — config schema changes |
 | [#2245](https://github.com/wavetermdev/waveterm/pull/2245) | Fix WebSocket utilities and Add OSC 52 clipboard support | +60/-6 | `frontend/app/view/term/termwrap.ts`, `frontend/util/wsutil.ts` | Medium | Caution |
 | [#2717](https://github.com/wavetermdev/waveterm/pull/2717) | Fix terminal state loss when switching workspaces | +57/-10 | `emain/emain-window.ts` | Medium | Caution |
 | [#3401](https://github.com/wavetermdev/waveterm/pull/3401) | fix(ssh): wrap agent signers to continue to next identity on signing failure | +87/-1 | `pkg/remote/sshclient.go`, `pkg/remote/sshsigners.go` | Medium | Caution |
-| [#2742](https://github.com/wavetermdev/waveterm/pull/2742) | Add drag-and-drop file support to terminal | +101/-3 | 5 files (`emain/preload.ts`, ...) | Medium | Caution — overlaps existing patch |
-| [#3016](https://github.com/wavetermdev/waveterm/pull/3016) | feat: implement per-block zsh history isolation | +97/-26 | 3 files (`pkg/util/shellutil/shellintegration/zsh_zshrc.sh`, ...) | Medium | Caution |
-| [#3421](https://github.com/wavetermdev/waveterm/pull/3421) | add ssh agent forwarding support (ForwardAgent / ssh:forwardagent) | +128/-11 | 7 files (`docs/docs/connections.mdx`, ...) | Medium | Caution — config schema changes |
+| [#2742](https://github.com/wavetermdev/waveterm/pull/2742) | Add drag-and-drop file support to terminal | +101/-3 | `emain/preload.ts`, `frontend/app/view/term/term.tsx`, … _+3 more_ | Medium | Caution — overlaps existing patch |
+| [#3016](https://github.com/wavetermdev/waveterm/pull/3016) | feat: implement per-block zsh history isolation | +97/-26 | `pkg/util/shellutil/shellintegration/zsh_zshrc.sh`, `pkg/util/shellutil/shellutil.go`, … _+1 more_ | Medium | Caution |
+| [#3421](https://github.com/wavetermdev/waveterm/pull/3421) | add ssh agent forwarding support (ForwardAgent / ssh:forwardagent) | +128/-11 | `docs/docs/connections.mdx`, `frontend/types/gotypes.d.ts`, … _+5 more_ | Medium | Caution — config schema changes |
 | [#2859](https://github.com/wavetermdev/waveterm/pull/2859) | feat: cmd+click to open file paths in terminal | +160/-0 | `frontend/app/view/term/term-link-provider.ts`, `frontend/app/view/term/termwrap.ts` | Medium | Caution |
-| [#3290](https://github.com/wavetermdev/waveterm/pull/3290) | fix: preserve reasoning_content for DeepSeek chat completions | +212/-24 | 3 files (`pkg/aiusechat/openaichat/openaichat-backend.go`, ...) | Medium | Caution |
-| [#3460](https://github.com/wavetermdev/waveterm/pull/3460) | fix: recover durable SSH sessions stuck falsely-attached after stream timeout (#3439) | +250/-6 | 6 files (`cmd/test-streammanager/main-test-streammanager.go`, ...) | Medium | Caution |
-| [#3152](https://github.com/wavetermdev/waveterm/pull/3152) | fix: prevent "no route for conn:..." errors and add shell path expansion | +354/-0 | 3 files (`pkg/remote/conncontroller/conncontroller.go`, ...) | Medium | Caution |
-| [#3066](https://github.com/wavetermdev/waveterm/pull/3066) | Add standalone file suggestion preview and fix PreviewEnv service narrowing | +401/-38 | 7 files (`frontend/app/suggestion/suggestion.tsx`, ...) | Medium | Caution |
+| [#3290](https://github.com/wavetermdev/waveterm/pull/3290) | fix: preserve reasoning_content for DeepSeek chat completions | +212/-24 | `pkg/aiusechat/openaichat/openaichat-backend.go`, `pkg/aiusechat/openaichat/openaichat-backend_test.go`, … _+1 more_ | Medium | Caution |
+| [#3460](https://github.com/wavetermdev/waveterm/pull/3460) | fix: recover durable SSH sessions stuck falsely-attached after stream timeout (#3439) | +250/-6 | `cmd/test-streammanager/main-test-streammanager.go`, `pkg/jobcontroller/jobcontroller.go`, … _+4 more_ | Medium | Caution |
+| [#3152](https://github.com/wavetermdev/waveterm/pull/3152) | fix: prevent "no route for conn:..." errors and add shell path expansion | +354/-0 | `pkg/remote/conncontroller/conncontroller.go`, `pkg/shellexec/shellexec.go`, … _+1 more_ | Medium | Caution |
+| [#3066](https://github.com/wavetermdev/waveterm/pull/3066) | Add standalone file suggestion preview and fix PreviewEnv service narrowing | +401/-38 | `frontend/app/suggestion/suggestion.tsx`, `frontend/app/view/preview/preview.tsx`, … _+5 more_ | Medium | Caution |
 
 ### Tier 4 — High risk (large, multi-file, features)
 
 | PR | Title | Size | Files | Risk | .patch fit |
-|----|-------|------|-------|------|------------|
-| [#3408](https://github.com/wavetermdev/waveterm/pull/3408) | fix(term): emit distinct CSI-u sequence for Ctrl+Enter in terminal blocks | +23/-0 | 9 files (`cmd/generateschema/main-generateschema.go`, ...) | High | Risky |
-| [#2835](https://github.com/wavetermdev/waveterm/pull/2835) | Tab background glow on process exit/bell | +174/-3 | 11 files (`docs/docs/config.mdx`, ...) | High | Risky |
-| [#3004](https://github.com/wavetermdev/waveterm/pull/3004) | Upgrade OSC 16162 `I` to return full ZLE buffer and cursor state | +186/-43 | 8 files (`aiprompts/wave-osc-16162.md`, ...) | High | Risky |
-| [#3353](https://github.com/wavetermdev/waveterm/pull/3353) | Add Tab Lock feature: prevent close, lock icon and tab color | +269/-15 | 14 files (`frontend/app/store/keymodel.ts`, ...) | High | Risky |
-| [#3205](https://github.com/wavetermdev/waveterm/pull/3205) | feat: add quick terminal float window with double-ESC trigger | +292/-18 | 9 files (`frontend/app/store/global-atoms.ts`, ...) | High | Risky |
-| [#3086](https://github.com/wavetermdev/waveterm/pull/3086) | Test pr 1 rebased | +339/-5 | 9 files (`frontend/app/aipanel/aimessage.tsx`, ...) | High | Risky |
-| [#3333](https://github.com/wavetermdev/waveterm/pull/3333) | add wsh tab commands (create, rename, focus) | +451/-0 | 8 files (`cmd/wsh/cmd/wshcmd-tab.go`, ...) | High | Risky |
+|----|----|----|----|----|----|
+| [#3408](https://github.com/wavetermdev/waveterm/pull/3408) | fix(term): emit distinct CSI-u sequence for Ctrl+Enter in terminal blocks | +23/-0 | `cmd/generateschema/main-generateschema.go`, `frontend/app/view/term/term-model.ts`, … _+7 more_ | High | Risky |
+| [#2835](https://github.com/wavetermdev/waveterm/pull/2835) | Tab background glow on process exit/bell | +174/-3 | `docs/docs/config.mdx`, `frontend/app/tab/tab.scss`, … _+9 more_ | High | Risky |
+| [#3004](https://github.com/wavetermdev/waveterm/pull/3004) | Upgrade OSC 16162 `I` to return full ZLE buffer and cursor state | +186/-43 | `aiprompts/wave-osc-16162.md`, `frontend/app/view/term/osc-handlers.test.ts`, … _+6 more_ | High | Risky |
+| [#3353](https://github.com/wavetermdev/waveterm/pull/3353) | Add Tab Lock feature: prevent close, lock icon and tab color | +269/-15 | `frontend/app/store/keymodel.ts`, `frontend/app/tab/tab.scss`, … _+12 more_ | High | Risky |
+| [#3205](https://github.com/wavetermdev/waveterm/pull/3205) | feat: add quick terminal float window with double-ESC trigger | +292/-18 | `frontend/app/store/global-atoms.ts`, `frontend/app/store/global.ts`, … _+7 more_ | High | Risky |
+| [#3086](https://github.com/wavetermdev/waveterm/pull/3086) | Test pr 1 rebased | +339/-5 | `frontend/app/aipanel/aimessage.tsx`, `frontend/app/aipanel/aipanel.tsx`, … _+7 more_ | High | Risky |
+| [#3333](https://github.com/wavetermdev/waveterm/pull/3333) | add wsh tab commands (create, rename, focus) | +451/-0 | `cmd/wsh/cmd/wshcmd-tab.go`, `docs/docs/wsh-reference.mdx`, … _+6 more_ | High | Risky |
 | [#3070](https://github.com/wavetermdev/waveterm/pull/3070) | Add a whitelisted AI tool definition for Wave config updates | +545/-0 | `pkg/aiusechat/tools_setconfig.go`, `pkg/aiusechat/tools_setconfig_test.go` | High | Risky |
-| [#3331](https://github.com/wavetermdev/waveterm/pull/3331) | [codex] Fix terminal IME composition handling | +526/-62 | 24 files (`Taskfile.yml`, ...) | High | Risky |
-| [#3480](https://github.com/wavetermdev/waveterm/pull/3480) | feat: add configurable keybindings via keybindings.json | +499/-244 | 9 files (`frontend/app/store/global.ts`, ...) | High | Risky |
-| [#2238](https://github.com/wavetermdev/waveterm/pull/2238) | Sysinfo: add support for AMD and NVIDIA GPUs | +927/-2 | 7 files (`docs/GPU_MONITORING.md`, ...) | High | Risky |
-| [#2103](https://github.com/wavetermdev/waveterm/pull/2103) | refactor: enhance AI block UI/UX | +697/-252 | 6 files (`frontend/app/element/markdown.scss`, ...) | High | Risky |
-| [#3069](https://github.com/wavetermdev/waveterm/pull/3069) | Make config preview default-aware and adopt a VS Code-style settings layout | +995/-0 | 4 files (`frontend/app/configui/configvalidation.test.ts`, ...) | High | Risky |
-| [#3184](https://github.com/wavetermdev/waveterm/pull/3184) | feat: add i18n framework with Chinese (zh-CN) localization | +369/-648 | 14 files (`frontend/app/aipanel/aipanel-contextmenu.ts`, ...) | High | Risky |
-| [#3443](https://github.com/wavetermdev/waveterm/pull/3443) | File explorer bookmarks (folder / file / document-position) | +867/-200 | 22 files (`frontend/app/element/markdown-anchor.test.ts`, ...) | High | Risky |
-| [#3293](https://github.com/wavetermdev/waveterm/pull/3293) | Notes widget (w/ syncing backend) | +1158/-12 | 25 files (`docs/docs/config.mdx`, ...) | High | Risky |
-| [#3235](https://github.com/wavetermdev/waveterm/pull/3235) | Add block rename and preview follow terminal features | +647/-563 | 14 files (`.gitignore`, ...) | High | Risky |
-| [#2763](https://github.com/wavetermdev/waveterm/pull/2763) | add workspace directory feature with shell quoting and tests | +844/-613 | 18 files (`emain/emain-ipc.ts`, ...) | High | Risky |
-| [#3263](https://github.com/wavetermdev/waveterm/pull/3263) | feat: tab templates and geolocation polyfill for webviews | +968/-593 | 19 files (`db/migrations-wstore/000012_tabtemplate.down.sql`, ...) | High | Risky |
-| [#2940](https://github.com/wavetermdev/waveterm/pull/2940) | feat(term): add sixel rendering and propagate terminal pixel size to PTY | +1010/-598 | 13 files (`frontend/app/view/term/term-model.ts`, ...) | High | Risky |
-| [#3479](https://github.com/wavetermdev/waveterm/pull/3479) | feat: add Excalidraw diagram editor widget | +2049/-2 | 20 files (`.gitignore`, ...) | High | Risky |
-| [#3399](https://github.com/wavetermdev/waveterm/pull/3399) | Feat/files widget active cwd tree | +1585/-721 | 29 files (`electron.vite.config.ts`, ...) | High | Risky |
-| [#3312](https://github.com/wavetermdev/waveterm/pull/3312) | feat: add three-section VTabBar with working queue and archive queue | +1349/-967 | 24 files (`.github/workflows/build-helper.yml`, ...) | High | Risky |
-| [#3275](https://github.com/wavetermdev/waveterm/pull/3275) | New Direct Terminal Tsunami SubBlock + TCP over PTY system to forward ports | +3311/-162 | 61 files (`.gitignore`, ...) | High | Risky |
-| [#2789](https://github.com/wavetermdev/waveterm/pull/2789) | feat: Tab base directory with VS Code style redesign | +4152/-141 | 42 files (`CHANGES.md`, ...) | High | Risky |
-| [#3220](https://github.com/wavetermdev/waveterm/pull/3220) | feat(platform): 优化Windows平台路径处理和SSH配置文件支持 | +7925/-371 | 77 files (`.gitignore`, ...) | High | Risky |
+| [#3331](https://github.com/wavetermdev/waveterm/pull/3331) | [codex] Fix terminal IME composition handling | +526/-62 | `Taskfile.yml`, `electron-builder.config.cjs`, … _+22 more_ | High | Risky |
+| [#3480](https://github.com/wavetermdev/waveterm/pull/3480) | feat: add configurable keybindings via keybindings.json | +499/-244 | `frontend/app/store/global.ts`, `frontend/app/store/keymodel.ts`, … _+7 more_ | High | Risky |
+| [#2238](https://github.com/wavetermdev/waveterm/pull/2238) | Sysinfo: add support for AMD and NVIDIA GPUs | +927/-2 | `docs/GPU_MONITORING.md`, `frontend/app/theme.scss`, … _+5 more_ | High | Risky |
+| [#2103](https://github.com/wavetermdev/waveterm/pull/2103) | refactor: enhance AI block UI/UX | +697/-252 | `frontend/app/element/markdown.scss`, `frontend/app/element/markdown.tsx`, … _+4 more_ | High | Risky |
+| [#3069](https://github.com/wavetermdev/waveterm/pull/3069) | Make config preview default-aware and adopt a VS Code-style settings layout | +995/-0 | `frontend/app/configui/configvalidation.test.ts`, `frontend/app/configui/configvalidation.ts`, … _+2 more_ | High | Risky |
+| [#3184](https://github.com/wavetermdev/waveterm/pull/3184) | feat: add i18n framework with Chinese (zh-CN) localization | +369/-648 | `frontend/app/aipanel/aipanel-contextmenu.ts`, `frontend/app/aipanel/aipanelheader.tsx`, … _+12 more_ | High | Risky |
+| [#3443](https://github.com/wavetermdev/waveterm/pull/3443) | File explorer bookmarks (folder / file / document-position) | +867/-200 | `frontend/app/element/markdown-anchor.test.ts`, `frontend/app/element/markdown-anchor.ts`, … _+20 more_ | High | Risky |
+| [#3293](https://github.com/wavetermdev/waveterm/pull/3293) | Notes widget (w/ syncing backend) | +1158/-12 | `docs/docs/config.mdx`, `frontend/app/block/blockregistry.ts`, … _+23 more_ | High | Risky |
+| [#3235](https://github.com/wavetermdev/waveterm/pull/3235) | Add block rename and preview follow terminal features | +647/-563 | `.gitignore`, `CLAUDE.md`, … _+12 more_ | High | Risky |
+| [#2763](https://github.com/wavetermdev/waveterm/pull/2763) | add workspace directory feature with shell quoting and tests | +844/-613 | `emain/emain-ipc.ts`, `emain/preload.ts`, … _+16 more_ | High | Risky |
+| [#3263](https://github.com/wavetermdev/waveterm/pull/3263) | feat: tab templates and geolocation polyfill for webviews | +968/-593 | `db/migrations-wstore/000012_tabtemplate.down.sql`, `db/migrations-wstore/000012_tabtemplate.up.sql`, … _+17 more_ | High | Risky |
+| [#2940](https://github.com/wavetermdev/waveterm/pull/2940) | feat(term): add sixel rendering and propagate terminal pixel size to PTY | +1010/-598 | `frontend/app/view/term/term-model.ts`, `frontend/app/view/term/term.tsx`, … _+11 more_ | High | Risky |
+| [#3479](https://github.com/wavetermdev/waveterm/pull/3479) | feat: add Excalidraw diagram editor widget | +2049/-2 | `.gitignore`, `cmd/wsh/cmd/wshcmd-excalidraw.go`, … _+18 more_ | High | Risky |
+| [#3399](https://github.com/wavetermdev/waveterm/pull/3399) | Feat/files widget active cwd tree | +1585/-721 | `electron.vite.config.ts`, `frontend/app/block/block.tsx`, … _+27 more_ | High | Risky |
+| [#3312](https://github.com/wavetermdev/waveterm/pull/3312) | feat: add three-section VTabBar with working queue and archive queue | +1349/-967 | `.github/workflows/build-helper.yml`, `.github/workflows/publish-release.yml`, … _+22 more_ | High | Risky |
+| [#3275](https://github.com/wavetermdev/waveterm/pull/3275) | New Direct Terminal Tsunami SubBlock + TCP over PTY system to forward ports | +3311/-162 | `.gitignore`, `.vscode/settings.json`, … _+59 more_ | High | Risky |
+| [#2789](https://github.com/wavetermdev/waveterm/pull/2789) | feat: Tab base directory with VS Code style redesign | +4152/-141 | `CHANGES.md`, `CLAUDE.md`, … _+40 more_ | High | Risky |
+| [#3220](https://github.com/wavetermdev/waveterm/pull/3220) | feat(platform): 优化Windows平台路径处理和SSH配置文件支持 | +7925/-371 | `.gitignore`, `.harness/decisions.md`, … _+75 more_ | High | Risky |
 
 ## Not applicable
 
 ### Documentation only
 
 | PR | Title | Size | Files |
-|----|-------|------|-------|
+|----|----|----|----|
 | [#3477](https://github.com/wavetermdev/waveterm/pull/3477) | docs: add MiniMax AI provider to Wave AI documentation | +55/-0 | `docs/docs/waveai-modes.mdx` |
-| [#3265](https://github.com/wavetermdev/waveterm/pull/3265) | docs: add Simplified Chinese README | +171/-3 | 4 files (`README.ko.md`, ...) |
-| [#3075](https://github.com/wavetermdev/waveterm/pull/3075) | feat: improve skill scores for waveterm | +36/-965 | 8 files (`.kilocode/skills/add-config/SKILL.md`, ...) |
+| [#3265](https://github.com/wavetermdev/waveterm/pull/3265) | docs: add Simplified Chinese README | +171/-3 | `README.ko.md`, `README.md`, … _+2 more_ |
+| [#3075](https://github.com/wavetermdev/waveterm/pull/3075) | feat: improve skill scores for waveterm | +36/-965 | `.kilocode/skills/add-config/SKILL.md`, `.kilocode/skills/add-rpc/SKILL.md`, … _+6 more_ |
 | [#2218](https://github.com/wavetermdev/waveterm/pull/2218) | Add docs how to configure Docker Model Runner as the AI backend | +22/-1 | `docs/docs/ai-presets.mdx`, `docs/docs/faq.mdx` |
 
 ### Dependabot (auto-managed by upstream)
 
 | PR | Title | Size |
-|----|-------|------|
+|----|----|----|
 | [#3474](https://github.com/wavetermdev/waveterm/pull/3474) | Bump js-yaml from 3.14.1 to 3.15.1 | +16/-6 |
 | [#3473](https://github.com/wavetermdev/waveterm/pull/3473) | Bump nanoid from 3.3.11 to 3.3.18 | +3/-3 |
 | [#3470](https://github.com/wavetermdev/waveterm/pull/3470) | Bump brace-expansion | +22/-22 |
