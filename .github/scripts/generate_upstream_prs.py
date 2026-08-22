@@ -156,6 +156,11 @@ def fetch_prs() -> list[PR]:
     return prs
 
 
+def pr_link(number: int) -> str:
+    """Format a PR number as a clickable markdown link."""
+    return f"[#{number}](https://github.com/{UPSTREAM_REPO}/pull/{number})"
+
+
 def compute_file_overlaps(prs: list[PR]) -> dict[str, list[int]]:
     """Find files that appear in multiple PRs."""
     file_to_prs: dict[str, list[int]] = defaultdict(list)
@@ -205,10 +210,10 @@ def generate_markdown(prs: list[PR]) -> str:
     for num, (title, branch, patch_file) in sorted(ALREADY_INTEGRATED.items()):
         pr = next((p for p in prs if p.number == num), None)
         if pr:
-            lines.append(f"| #{num} | {title} | {pr.size} | {fmt_files(pr.files)} | `{branch}` | `{patch_file}` |")
+            lines.append(f"| {pr_link(num)} | {title} | {pr.size} | {fmt_files(pr.files)} | `{branch}` | `{patch_file}` |")
         else:
             # PR may be closed/merged — use stored info
-            lines.append(f"| #{num} | {title} | — | — | `{branch}` | `{patch_file}` |")
+            lines.append(f"| {pr_link(num)} | {title} | — | — | `{branch}` | `{patch_file}` |")
 
     # Filter out already-integrated and dependabot/docs for the main tables
     active = [p for p in prs if p.number not in ALREADY_INTEGRATED and not p.is_dependabot and not p.is_docs_only]
@@ -229,25 +234,25 @@ def generate_markdown(prs: list[PR]) -> str:
             continue
         lines.extend(["", f"### {heading}", "", "| PR | Title | Size | Files | Risk | .patch fit |", "|----|-------|------|-------|------|------------|"])
         for pr in tier_prs:
-            lines.append(f"| #{pr.number} | {pr.title} | {pr.size} | {fmt_files(pr.files)} | {pr.risk} | {pr.patch_fit} |")
+            lines.append(f"| {pr_link(pr.number)} | {pr.title} | {pr.size} | {fmt_files(pr.files)} | {pr.risk} | {pr.patch_fit} |")
 
     # Not applicable
     if docs_only:
         lines.extend(["", "## Not applicable", "", "### Documentation only", "", "| PR | Title | Size | Files |", "|----|-------|------|-------|"])
         for pr in sorted(docs_only, key=lambda p: p.number, reverse=True):
-            lines.append(f"| #{pr.number} | {pr.title} | {pr.size} | {fmt_files(pr.files)} |")
+            lines.append(f"| {pr_link(pr.number)} | {pr.title} | {pr.size} | {fmt_files(pr.files)} |")
 
     if dependabot:
         lines.extend(["", "### Dependabot (auto-managed by upstream)", "", "| PR | Title | Size |", "|----|-------|------|"])
         for pr in sorted(dependabot, key=lambda p: p.number, reverse=True):
-            lines.append(f"| #{pr.number} | {pr.title} | {pr.size} |")
+            lines.append(f"| {pr_link(pr.number)} | {pr.title} | {pr.size} |")
 
     # File overlap matrix
     overlaps = compute_file_overlaps(prs)
     if overlaps:
         lines.extend(["", "## File overlap matrix", "", "Files that appear in multiple PRs — integrating one may complicate integrating another:", "", "| File | PRs |", "|------|-----|"])
         for f, nums in sorted(overlaps.items(), key=lambda x: (-len(x[1]), x[0])):
-            pr_links = ", ".join(f"#{n}" for n in nums)
+            pr_links = ", ".join(pr_link(n) for n in nums)
             marker = " **(patched)**" if f in PATCHED_FILES else ""
             lines.append(f"| `{f}`{marker} | {pr_links} |")
 
