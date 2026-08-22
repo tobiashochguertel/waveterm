@@ -1,0 +1,14 @@
+# PR Catalog display configuration
+# Used by .github/scripts/generate_upstream_prs.py
+#
+# CLI flags override these values. See --help.
+
+# File column options
+files_display: inline          # inline | multiline (one file per line via <br>)
+files_max: 2                   # 0 = show all files, N = show first N
+files_show_changes: false      # show +N/-N per file
+files_link_target: none        # pr-diff | origin | none
+
+# Table options
+show_size: true                # show total +N/-N column
+link_prs: true                 # link PR numbers to GitHub

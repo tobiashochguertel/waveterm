@@ -26,17 +26,19 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v10.0.1
         with:
-          cache-dependency-glob: .github/scripts/generate_upstream_prs.py
+          cache-dependency-glob: |
+            .github/scripts/generate_upstream_prs.py
+            .github/pr-catalog.yaml
           cache-suffix: "prs"
 
       - name: Generate catalog
-        run: uv run --script .github/scripts/generate_upstream_prs.py
+        run: uv run --script .github/scripts/generate_upstream_prs.py --config .github/pr-catalog.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Commit if changed
         run: |
-          git add .github/UPSTREAM-PRS.md
+          git add .github/UPSTREAM-PRS.md .github/pr-catalog.yaml
           if git diff --cached --quiet; then
             echo "No changes — catalog is up to date."
           else
