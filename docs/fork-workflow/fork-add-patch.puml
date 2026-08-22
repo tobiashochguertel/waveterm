@@ -1,0 +1,75 @@
+@startuml fork-add-patch
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam ActivityBackgroundColor #E8F0FE
+skinparam ActivityBorderColor #4285F4
+skinparam ActivityDiamondBackgroundColor #FFF9C4
+skinparam ActivityDiamondBorderColor #FBC02D
+skinparam NoteBackgroundColor #FFF9C4
+skinparam NoteBorderColor #FBC02D
+
+title Adding a New Patch (from upstream PR or own feature)
+
+|Phase 1: Develop|
+
+start
+
+:Branch from dev.patch
+``git checkout dev.patch``
+``git checkout -b feature/xxx``;
+
+:Develop normally
+Edit files, commit freely
+``npm run dev`` for hot reload;
+
+:Verify build
+``npm run build:dev``
+``go build ./pkg/...``
+``go test ./pkg/...``;
+
+|Phase 2: Convert to .patch|
+
+repeat
+  :Generate .patch file
+  ``git diff upstream/main...HEAD > .github/patches/NNN-desc.patch``;
+
+  :Test patch applies cleanly
+  ``git checkout dev.patch``
+  ``git checkout upstream/main -- <modified files>``
+  ``git apply --check NNN-desc.patch``;
+repeat while (Patch doesn't apply cleanly?\nRebase feature branch onto\nlatest upstream and retry) is (yes)
+-> no;
+
+:Apply for real
+``git apply NNN-desc.patch``;
+
+:Verify idempotency
+``git apply --reverse --check NNN-desc.patch``;
+
+if (Reverse check passes?) then (yes)
+else (no)
+  :Patch is not cleanly
+  reversible — fix it;
+  stop
+endif
+
+|Phase 3: Register|
+
+:Add modified files to PATCHED_FILES
+in sync-upstream-and-fix.yml
+(new files don't need listing);
+
+:Add entry to ALREADY_INTEGRATED
+in generate_upstream_prs.py;
+
+:Update workflow commit message
+to list the new patch;
+
+:Commit and push
+``git add -A``
+``git commit -m "feat: integrate ..."``
+``git push origin dev.patch``;
+
+stop
+
+@enduml

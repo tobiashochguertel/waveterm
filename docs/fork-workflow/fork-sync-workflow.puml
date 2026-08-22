@@ -1,0 +1,68 @@
+@startuml fork-sync-workflow
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam ActivityBackgroundColor #E8F0FE
+skinparam ActivityBorderColor #4285F4
+skinparam ActivityDiamondBackgroundColor #FFF9C4
+skinparam ActivityDiamondBorderColor #FBC02D
+skinparam NoteBackgroundColor #FFF9C4
+skinparam NoteBorderColor #FBC02D
+
+title Sync Workflow: revert-then-repatch
+
+start
+
+:Fetch upstream
+``git fetch upstream --tags```;
+
+:Determine merge ref
+main → latest release tag
+dev.patch → upstream/main;
+
+:Check if already up to date
+``git merge-base --is-ancestor $SHA HEAD``;
+
+if (Already up to date?) then (yes)
+  :Skip — nothing to do;
+  stop
+else (no)
+endif
+
+:Revert all PATCHED_FILES to upstream version
+``git checkout $SHA -- <each patched file>``
+``git commit -m "chore: revert patched files"``;
+
+:Merge upstream
+``git merge $MERGE_REF --no-edit``;
+
+if (Merge conflicts?) then (yes)
+  :FAIL LOUDLY
+  ``git merge --abort``
+  ``exit 1``;
+  stop
+else (no)
+endif
+
+:Apply all patches
+``.github/scripts/apply_patches.sh``
+For each .patch file:
+  - reverse check → already applied? skip
+  - apply check → git apply
+  - else → FAIL LOUDLY;
+
+if (Patch applies cleanly?) then (yes)
+  :Commit re-applied patches
+  ``git add frontend/ pkg/``
+  ``git commit -m "fix: re-apply patches"``;
+
+  :Push
+  ``git push origin <branch>``;
+  stop
+else (no)
+  :FAIL LOUDLY
+  upstream changed surrounding code
+  ``exit 1``;
+  stop
+endif
+
+@enduml

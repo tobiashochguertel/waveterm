@@ -1,0 +1,57 @@
+@startuml fork-decision-flow
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam ActivityBackgroundColor #E8F0FE
+skinparam ActivityBorderColor #4285F4
+skinparam ActivityDiamondBackgroundColor #FFF9C4
+skinparam ActivityDiamondBorderColor #FBC02D
+
+title Decision: Direct Merge vs .patch File
+
+start
+
+:Feature is stable on feature branch;
+
+:Does it touch files
+already in PATCHED_FILES?;
+
+if (yes) then (yes)
+  :**Must use .patch file**
+  Direct merge would be
+  silently reverted by
+  the sync workflow;
+  stop
+else (no)
+endif
+
+:Does it touch files
+upstream changes frequently?
+(e.g. gotypes.d.ts, settingsconfig.go);
+
+if (yes) then (yes)
+  :**Use .patch file**
+  Avoids recurring merge
+  conflicts on every sync;
+  stop
+else (no)
+endif
+
+:Is it a large feature
+(many files, ongoing iteration)?;
+
+if (yes) then (yes)
+  :**Use .patch file**
+  Easier to maintain,
+  regenerate from feature branch;
+  stop
+else (no)
+  :**Direct merge is fine**
+  Small, isolated changes
+  won't conflict with upstream
+  ``git checkout dev.patch``
+  ``git merge feature/xxx``
+  ``git push``;
+  stop
+endif
+
+@enduml
