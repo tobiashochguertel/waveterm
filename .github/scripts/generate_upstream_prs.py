@@ -5,21 +5,24 @@
 # ///
 """Generate .github/UPSTREAM-PRS.md from open upstream pull requests.
 
-Fetches all open PRs via `gh pr list`, categorizes them by risk level,
-detects file overlaps, and writes a markdown document.
+Fetches all open PRs via the GitHub REST API, categorizes them by risk
+level, detects file overlaps, and writes a markdown document.
 
 Usage:
     uv run --script .github/scripts/generate_upstream_prs.py
 
-Requires: gh CLI authenticated with access to wavetermdev/waveterm.
+Environment:
+    GITHUB_TOKEN — GitHub token with read access to public repos.
+                   In GitHub Actions, GITHUB_TOKEN is set automatically.
 """
 from __future__ import annotations
 
 import json
-import subprocess
+import os
 import sys
+import urllib.request
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -122,32 +125,73 @@ class PR:
         return "Risky"
 
 
+def _api_get(url: str) -> dict | list:
+    """Make an authenticated GitHub API request."""
+    token = os.environ.get("GITHUB_TOKEN", "")
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    req = urllib.request.Request(url, headers=headers)
+    with urllib.request.urlopen(req) as resp:
+        return json.loads(resp.read())
+
+
 def fetch_prs() -> list[PR]:
-    """Fetch all open PRs with file lists via gh CLI."""
-    result = subprocess.run(
-        [
-            "gh", "pr", "list",
-            "--repo", UPSTREAM_REPO,
-            "--state", "open",
-            "--limit", "100",
-            "--json", "number,title,author,additions,deletions,files,createdAt",
-        ],
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    raw = json.loads(result.stdout)
+    """Fetch all open PRs with file lists via GitHub REST API."""
+    # Fetch PR list (paginated, 100 per page)
+    prs_data: list[dict] = []
+    page = 1
+    while True:
+        url = (
+            f"https://api.github.com/repos/{UPSTREAM_REPO}/pulls"
+            f"?state=open&per_page=100&page={page}&sort=created&direction=desc"
+        )
+        batch = _api_get(url)
+        if not batch:
+            break
+        prs_data.extend(batch)
+        if len(batch) < 100:
+            break
+        page += 1
+
+    # Fetch files for each PR (separate API call per PR)
+    # The list endpoint doesn't include additions/deletions, so we sum
+    # them from the per-file data in the files endpoint.
     prs = []
-    for item in raw:
-        files = [f["path"] for f in item.get("files", [])]
+    for item in prs_data:
+        pr_number = item["number"]
+        # Fetch files (paginated, 100 per page)
+        files: list[str] = []
+        additions = 0
+        deletions = 0
+        page = 1
+        while True:
+            url = (
+                f"https://api.github.com/repos/{UPSTREAM_REPO}/pulls/{pr_number}/files"
+                f"?per_page=100&page={page}"
+            )
+            batch = _api_get(url)
+            if not batch:
+                break
+            for f in batch:
+                files.append(f["filename"])
+                additions += f.get("additions", 0)
+                deletions += f.get("deletions", 0)
+            if len(batch) < 100:
+                break
+            page += 1
+
         prs.append(PR(
-            number=item["number"],
+            number=pr_number,
             title=item["title"],
-            author=item["author"]["login"],
-            additions=item["additions"],
-            deletions=item["deletions"],
+            author=item["user"]["login"],
+            additions=additions,
+            deletions=deletions,
             files=files,
-            created_at=item["createdAt"],
+            created_at=item["created_at"],
         ))
     return prs
 
