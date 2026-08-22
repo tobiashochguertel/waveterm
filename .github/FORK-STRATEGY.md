@@ -45,10 +45,12 @@ merge conflicts. Each patch has:
 
 Current patches:
 
-| Patch | Script | File | Branch |
-|-------|--------|------|--------|
-| xterm cursor fix | `apply_xterm_fix.py` | `frontend/app/view/term/term.tsx` | `main` + `dev` |
-| bookmark typeahead fix | `apply_bookmark_fix.py` | `frontend/app/view/webview/webview.tsx` | `dev` only |
+| Patch | Patch file | Files | Branch |
+|-------|-----------|-------|--------|
+| xterm cursor fix | `001-xterm-cursor-fix.patch` | `frontend/app/view/term/term.tsx` | `main` + `dev.patch` |
+| bookmark typeahead fix | `002-bookmark-typeahead-fix.patch` | `frontend/app/view/webview/webview.tsx` | `dev.patch` only |
+| focus fix | `003-focus-fix.patch` | `frontend/app/block/block.tsx` | `dev.patch` only |
+| file explorer bookmarks | `004-file-explorer-bookmarks.patch` | 22 files (see PR #3443) | `dev.patch` only |
 
 ## How the sync works
 
