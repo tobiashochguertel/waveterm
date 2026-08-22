@@ -99,14 +99,7 @@ jobs:
         run: |
           MERGE_REF="${{ steps.upstream-ref.outputs.merge_ref }}"
           UPSTREAM_SHA=$(git rev-parse "refs/tags/$MERGE_REF" 2>/dev/null || git rev-parse "$MERGE_REF")
-          while IFS= read -r file; do
-            [[ -z "$file" ]] && continue
-            echo "Reverting $file to upstream $MERGE_REF"
-            git checkout "$UPSTREAM_SHA" -- "$file" 2>/dev/null || {
-              echo "⚠️  $file not found in upstream — it may have been removed or renamed"
-            }
-          done <<< "$PATCHED_FILES"
-          git commit -m "chore: revert patched files to upstream $MERGE_REF before merge [skip ci]" 2>/dev/null || true
+          .github/scripts/revert_patched_files.sh "$UPSTREAM_SHA" "$MERGE_REF"
 
       - name: Merge upstream into main
         id: merge
@@ -230,14 +223,7 @@ jobs:
         run: |
           MERGE_REF="${{ steps.upstream-ref.outputs.merge_ref }}"
           UPSTREAM_SHA=$(git rev-parse "$MERGE_REF")
-          while IFS= read -r file; do
-            [[ -z "$file" ]] && continue
-            echo "Reverting $file to upstream $MERGE_REF"
-            git checkout "$UPSTREAM_SHA" -- "$file" 2>/dev/null || {
-              echo "⚠️  $file not found in upstream — it may have been removed or renamed"
-            }
-          done <<< "$PATCHED_FILES"
-          git commit -m "chore: revert patched files to upstream $MERGE_REF before merge [skip ci]" 2>/dev/null || true
+          .github/scripts/revert_patched_files.sh "$UPSTREAM_SHA" "$MERGE_REF"
 
       - name: Merge upstream into dev.patch
         id: merge
@@ -261,22 +247,7 @@ jobs:
 
       - name: Apply all patches
         if: steps.check-uptodate.outputs.up_to_date != 'true'
-        run: |
-          set -e
-          for patch in .github/patches/*.patch; do
-            name=$(basename "$patch")
-            if git apply --reverse --check "$patch" 2>/dev/null; then
-              echo "✅ $name already applied"
-              continue
-            fi
-            if git apply --check "$patch" 2>/dev/null; then
-              git apply "$patch"
-              echo "✅ applied $name"
-            else
-              echo "::error::$name does not apply cleanly — upstream may have changed the surrounding code"
-              exit 1
-            fi
-          done
+        run: .github/scripts/apply_patches.sh
 
       - name: Commit patches
         if: steps.check-uptodate.outputs.up_to_date != 'true'
