@@ -1,4 +1,4 @@
-name: Sync Upstream & Apply Fixes
+name: Sync Upstream & Apply Patches
 
 on:
   schedule:
@@ -11,14 +11,14 @@ on:
         required: false
         default: ""
       target_branch:
-        description: "Branch to sync: main (stable, latest tag) or dev (unstable, upstream/main)"
+        description: "Branch to sync: main (stable, latest tag) or dev.patch (unstable, upstream/main)"
         required: false
         default: "both"
         type: choice
         options:
           - both
           - main
-          - dev
+          - dev.patch
       force:
         description: "Force sync even if already up to date"
         required: false
@@ -26,7 +26,7 @@ on:
         type: boolean
 
 # Files that carry our custom patches. These are reverted to upstream's
-# version before merging, then re-applied via scripts after the merge.
+# version before merging, then re-applied via .patch files after the merge.
 # This avoids merge conflicts on these files while keeping all other
 # upstream changes clean.
 env:
@@ -40,7 +40,7 @@ jobs:
   sync-main:
     name: Sync main (stable) ← latest upstream tag
     runs-on: ubuntu-latest
-    if: github.event.inputs.target_branch != 'dev'
+    if: github.event.inputs.target_branch != 'dev.patch'
     permissions:
       contents: write
 
@@ -57,15 +57,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v10.0.1
-        with:
-          cache-dependency-glob: |
-            .github/scripts/apply_xterm_fix.py
-            .github/scripts/apply_bookmark_fix.py
-            .github/scripts/apply_focus_fix.py
-          cache-suffix: ${{ github.job }}
-
       - name: Add upstream remote
         run: |
           git remote add upstream https://github.com/wavetermdev/waveterm.git || true
@@ -78,7 +69,6 @@ jobs:
           if [[ -n "$INPUT_REF" ]]; then
             MERGE_REF="$INPUT_REF"
           else
-            # Find latest upstream release tag (vX.Y.Z, no pre-release)
             LATEST_TAG=$(git tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
             MERGE_REF="${LATEST_TAG:-upstream/main}"
           fi
@@ -138,15 +128,16 @@ jobs:
           echo "::error::Merge conflict with upstream ${{ steps.upstream-ref.outputs.merge_ref }}. Manual resolution required."
           exit 1
 
-      - name: Re-apply xterm fix
-        if: steps.check-uptodate.outputs.up_to_date != 'true'
-        run: uv run --script .github/scripts/apply_xterm_fix.py
-
-      - name: Commit xterm fix
+      - name: Apply xterm cursor fix
         if: steps.check-uptodate.outputs.up_to_date != 'true'
         run: |
-          git add frontend/app/view/term/term.tsx
-          git diff --cached --quiet || git commit -m "fix(term): disable crosshair cursor when macOptionIsMeta is enabled
+          # Idempotency: if reverse applies cleanly, the patch is already present
+          if git apply --reverse --check .github/patches/001-xterm-cursor-fix.patch 2>/dev/null; then
+            echo "✅ 001-xterm-cursor-fix.patch already applied"
+          else
+            git apply .github/patches/001-xterm-cursor-fix.patch
+            git add frontend/app/view/term/term.tsx
+            git commit -m "fix(term): disable crosshair cursor when macOptionIsMeta is enabled
 
           When term:macoptionismeta is set to true, xterm.js still activates
           column-select mode (crosshair cursor) on Option key hold because
@@ -155,6 +146,8 @@ jobs:
 
           Co-authored-by: Tobias Hochgürtel <tobias.hochguertel@googlemail.com>
           Co-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
+            echo "✅ applied 001-xterm-cursor-fix.patch"
+          fi
 
       - name: Push updated main
         if: steps.check-uptodate.outputs.up_to_date != 'true'
@@ -171,23 +164,23 @@ jobs:
             echo "## ✅ main sync complete" >> "$GITHUB_STEP_SUMMARY"
             echo "" >> "$GITHUB_STEP_SUMMARY"
             echo "- Merged: \`$MERGE_REF\`" >> "$GITHUB_STEP_SUMMARY"
-            echo "- Patched files reverted to upstream, then re-applied:" >> "$GITHUB_STEP_SUMMARY"
-            echo "  - \`frontend/app/view/term/term.tsx\` (xterm cursor fix)" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Patches re-applied:" >> "$GITHUB_STEP_SUMMARY"
+            echo "  - 001-xterm-cursor-fix.patch" >> "$GITHUB_STEP_SUMMARY"
           fi
 
-  # ── Unstable: sync dev from upstream/main + custom fixes ──────────────────
-  sync-dev:
-    name: Sync dev (unstable) ← upstream/main
+  # ── Unstable: sync dev.patch from upstream/main + all patches ─────────────
+  sync-dev-patch:
+    name: Sync dev.patch (unstable) ← upstream/main
     runs-on: ubuntu-latest
     if: github.event.inputs.target_branch != 'main'
     permissions:
       contents: write
 
     steps:
-      - name: Checkout fork dev
+      - name: Checkout fork dev.patch
         uses: actions/checkout@v6
         with:
-          ref: dev
+          ref: dev.patch
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -195,15 +188,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v10.0.1
-        with:
-          cache-dependency-glob: |
-            .github/scripts/apply_xterm_fix.py
-            .github/scripts/apply_bookmark_fix.py
-            .github/scripts/apply_focus_fix.py
-          cache-suffix: ${{ github.job }}
 
       - name: Add upstream remote
         run: |
@@ -231,14 +215,14 @@ jobs:
           if git merge-base --is-ancestor "$UPSTREAM_SHA" HEAD; then
             if [[ "${{ github.event.inputs.force }}" != "true" ]]; then
               echo "up_to_date=true" >> "$GITHUB_OUTPUT"
-              echo "dev already contains $MERGE_REF — nothing to do."
+              echo "dev.patch already contains $MERGE_REF — nothing to do."
             else
               echo "up_to_date=false" >> "$GITHUB_OUTPUT"
               echo "Force flag set — proceeding anyway."
             fi
           else
             echo "up_to_date=false" >> "$GITHUB_OUTPUT"
-            echo "Upstream has new commits to merge into dev."
+            echo "Upstream has new commits to merge into dev.patch."
           fi
 
       - name: Revert patched files to upstream version
@@ -255,13 +239,13 @@ jobs:
           done <<< "$PATCHED_FILES"
           git commit -m "chore: revert patched files to upstream $MERGE_REF before merge [skip ci]" 2>/dev/null || true
 
-      - name: Merge upstream into dev
+      - name: Merge upstream into dev.patch
         id: merge
         if: steps.check-uptodate.outputs.up_to_date != 'true'
         run: |
           MERGE_REF="${{ steps.upstream-ref.outputs.merge_ref }}"
           if git merge "$MERGE_REF" --no-edit \
-            -m "chore: merge upstream $MERGE_REF into dev [skip ci]"; then
+            -m "chore: merge upstream $MERGE_REF into dev.patch [skip ci]"; then
             echo "merge_status=success" >> "$GITHUB_OUTPUT"
           else
             echo "❌ Merge conflict detected — cannot auto-resolve"
@@ -275,87 +259,55 @@ jobs:
           echo "::error::Merge conflict with upstream ${{ steps.upstream-ref.outputs.merge_ref }}. Manual resolution required."
           exit 1
 
-      - name: Re-apply xterm fix
-        if: steps.check-uptodate.outputs.up_to_date != 'true'
-        run: uv run --script .github/scripts/apply_xterm_fix.py
-
-      - name: Commit xterm fix
+      - name: Apply all patches
         if: steps.check-uptodate.outputs.up_to_date != 'true'
         run: |
-          git add frontend/app/view/term/term.tsx
-          git diff --cached --quiet || git commit -m "fix(term): disable crosshair cursor when macOptionIsMeta is enabled
+          set -e
+          for patch in .github/patches/*.patch; do
+            name=$(basename "$patch")
+            if git apply --reverse --check "$patch" 2>/dev/null; then
+              echo "✅ $name already applied"
+              continue
+            fi
+            if git apply --check "$patch" 2>/dev/null; then
+              git apply "$patch"
+              echo "✅ applied $name"
+            else
+              echo "::error::$name does not apply cleanly — upstream may have changed the surrounding code"
+              exit 1
+            fi
+          done
 
-          When term:macoptionismeta is set to true, xterm.js still activates
-          column-select mode (crosshair cursor) on Option key hold because
-          shouldColumnSelect() checks macOptionClickForcesSelection independently
-          of macOptionIsMeta.
-
-          Co-authored-by: Tobias Hochgürtel <tobias.hochguertel@googlemail.com>
-          Co-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
-
-      - name: Re-apply bookmark typeahead fix
-        if: steps.check-uptodate.outputs.up_to_date != 'true'
-        run: uv run --script .github/scripts/apply_bookmark_fix.py
-
-      - name: Commit bookmark fix
-        if: steps.check-uptodate.outputs.up_to_date != 'true'
-        run: |
-          git add frontend/app/view/webview/webview.tsx
-          git diff --cached --quiet || git commit -m "fix(webview): fix bookmark typeahead not rendering suggestions
-
-          Convert fetchBookmarkSuggestions from a regular method to an arrow
-          function field so \`this\` stays bound when passed as a callback to
-          BlockHeaderSuggestionControl. Without this, calling the method lost
-          its \`this\` binding and threw on \`this.env\`, silently rejecting the
-          suggestions promise — so neither the bookmark list nor the empty
-          state ever rendered when pressing Cmd+O.
-
-          Also fix the \"Open bookmarks.json\" button path from
-          presets/bookmarks.json (which nothing reads) to the correct
-          bookmarks.json at the config directory root.
-
-          Ref: wavetermdev/waveterm#3420
-
-          Co-authored-by: Tobias Hochgürtel <tobias.hochguertel@googlemail.com>
-          Co-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
-
-      - name: Re-apply focus fix
-        if: steps.check-uptodate.outputs.up_to_date != 'true'
-        run: uv run --script .github/scripts/apply_focus_fix.py
-
-      - name: Commit focus fix
+      - name: Commit patches
         if: steps.check-uptodate.outputs.up_to_date != 'true'
         run: |
-          git add frontend/app/block/block.tsx
-          git diff --cached --quiet || git commit -m "fix(block): stop de-focusing block from re-grabbing focus
+          git add frontend/
+          git diff --cached --quiet || git commit -m "fix: re-apply custom patches after upstream merge
 
-          When clicking from one web block to another, both webviews become
-          unresponsive because the de-focusing block re-grabs DOM and logical
-          focus (webview-focus flap). Add guards so the de-focusing block only
-          acts when it actually has focus.
+          Patches applied:
+          - 001-xterm-cursor-fix.patch (macOptionClickForcesSelection)
+          - 002-bookmark-typeahead-fix.patch (PR #3420)
+          - 003-focus-fix.patch (PR #3429)
 
-          Ref: wavetermdev/waveterm#3429
-
-          Co-authored-by: Tobias Hochgürtel <tobias.hochguertel@googlemail.com>
           Co-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
 
-      - name: Push updated dev
+      - name: Push updated dev.patch
         if: steps.check-uptodate.outputs.up_to_date != 'true'
-        run: git push origin dev
+        run: git push origin dev.patch
 
       - name: Summary
         run: |
           MERGE_REF="${{ steps.upstream-ref.outputs.merge_ref }}"
           UP_TO_DATE="${{ steps.check-uptodate.outputs.up_to_date }}"
           if [[ "$UP_TO_DATE" == "true" ]]; then
-            echo "## ✅ dev already up to date" >> "$GITHUB_STEP_SUMMARY"
-            echo "dev already contains $MERGE_REF." >> "$GITHUB_STEP_SUMMARY"
+            echo "## ✅ dev.patch already up to date" >> "$GITHUB_STEP_SUMMARY"
+            echo "dev.patch already contains $MERGE_REF." >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "## ✅ dev sync complete" >> "$GITHUB_STEP_SUMMARY"
+            echo "## ✅ dev.patch sync complete" >> "$GITHUB_STEP_SUMMARY"
             echo "" >> "$GITHUB_STEP_SUMMARY"
             echo "- Merged: \`$MERGE_REF\`" >> "$GITHUB_STEP_SUMMARY"
-            echo "- Patched files reverted to upstream, then re-applied:" >> "$GITHUB_STEP_SUMMARY"
-            echo "  - \`frontend/app/view/term/term.tsx\` (xterm cursor fix)" >> "$GITHUB_STEP_SUMMARY"
-            echo "  - \`frontend/app/view/webview/webview.tsx\` (bookmark typeahead fix)" >> "$GITHUB_STEP_SUMMARY"
-            echo "  - \`frontend/app/block/block.tsx\` (focus fix)" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Patches re-applied:" >> "$GITHUB_STEP_SUMMARY"
+            echo "  - 001-xterm-cursor-fix.patch" >> "$GITHUB_STEP_SUMMARY"
+            echo "  - 002-bookmark-typeahead-fix.patch" >> "$GITHUB_STEP_SUMMARY"
+            echo "  - 003-focus-fix.patch" >> "$GITHUB_STEP_SUMMARY"
           fi
