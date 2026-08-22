@@ -53,6 +53,7 @@ jobs:
           cache-dependency-glob: |
             .github/scripts/apply_xterm_fix.py
             .github/scripts/apply_bookmark_fix.py
+          cache-suffix: ${{ github.job }}
 
       - name: Add upstream remote
         run: |
@@ -169,6 +170,7 @@ jobs:
           cache-dependency-glob: |
             .github/scripts/apply_xterm_fix.py
             .github/scripts/apply_bookmark_fix.py
+          cache-suffix: ${{ github.job }}
 
       - name: Add upstream remote
         run: |
