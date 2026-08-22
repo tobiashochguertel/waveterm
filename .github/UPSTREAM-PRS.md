@@ -27,15 +27,8 @@ evaluated for integration into the fork via the `.patch` strategy.
 | PR | Title | Size | Files | Risk | .patch fit |
 |----|-------|------|-------|------|------------|
 | #3413 | fix(webview): respect system color scheme for prefers-color-scheme in web blocks | +1/-1 | `emain/emain.ts` | Zero | Excellent |
-| #3229 | Bump actions/upload-pages-artifact from 4 to 5 in /.github/workflows | +1/-1 | `.github/workflows/deploy-docsite.yml` | Zero | Excellent |
-| #3227 | Bump softprops/action-gh-release from 2 to 3 in /.github/workflows | +1/-1 | `.github/workflows/build-helper.yml` | Zero | Excellent |
-| #2950 | Bump actions/download-artifact from 4 to 8 in /.github/workflows | +1/-1 | `.github/workflows/build-helper.yml` | Zero | Excellent |
 | #3419 | fix(wsh): prevent deleteblock from silently ignoring positional arguments | +3/-1 | `cmd/wsh/cmd/wshcmd-deleteblock.go` | Zero | Excellent |
 | #3455 | fix(web): add missing returns after http.Error in handlers | +5/-0 | `pkg/web/web.go` | Zero | Excellent |
-| #3473 | Bump nanoid from 3.3.11 to 3.3.18 | +3/-3 | `package-lock.json` | Zero | Excellent |
-| #3465 | Bump fast-uri from 3.1.4 to 3.1.5 | +3/-3 | `package-lock.json` | Zero | Excellent |
-| #3461 | Bump ip-address from 10.2.0 to 10.4.0 | +3/-3 | `package-lock.json` | Zero | Excellent |
-| #3180 | Bump lodash from 4.17.23 to 4.18.1 | +3/-3 | `package-lock.json` | Zero | Excellent |
 | #3343 | feat(preview): sort directories before files in directory preview | +7/-1 | `frontend/app/view/preview/preview-directory.tsx` | Zero | Excellent |
 | #3404 | wavebase: symlink ~/.config/waveterm for snap users | +9/-0 | `pkg/wavebase/wavebase.go` | Zero | Excellent |
 
@@ -43,32 +36,21 @@ evaluated for integration into the fork via the `.patch` strategy.
 
 | PR | Title | Size | Files | Risk | .patch fit |
 |----|-------|------|-------|------|------------|
-| #3397 | Bump github.com/fsnotify/fsnotify from 1.9.0 to 1.10.1 | +3/-3 | `go.mod`, `go.sum` | Low | Great |
-| #2952 | Bump actions/upload-artifact from 5 to 7 in /.github/workflows | +3/-3 | `.github/workflows/build-helper.yml`, `.github/workflows/testdriver-build.yml` | Low | Great |
-| #2422 | Bump github.com/skeema/knownhosts from 1.3.1 to 1.3.2 | +3/-3 | `go.mod`, `go.sum` | Low | Great |
 | #3186 | ci: enable Windows ARM64 build in GitHub Actions | +5/-4 | `.github/workflows/build-helper.yml`, `Taskfile.yml` | Low | Great |
-| #3447 | Bump shell-quote from 1.8.4 to 1.10.0 | +5/-5 | `package-lock.json`, `package.json` | Low | Great |
 | #3339 | Fix Korean IME space handling on Windows | +12/-0 | `frontend/app/view/term/term-model.ts` | Low | Great |
 | #3278 | fix(UI)): ensure terminal theme application via xterm theme setter | +10/-2 | `frontend/app/view/term/termtheme.ts`, `frontend/app/view/term/termwrap.ts` | Low | Great |
-| #3454 | Bump postcss from 8.5.8 to 8.5.25 | +7/-7 | `package-lock.json` | Low | Great |
 | #2856 | fix: file browser shows newest files first, bump limit to 5000 | +13/-1 | `pkg/wshrpc/wshremote/wshremote_file.go`, `pkg/wshrpc/wshrpctypes_const.go` | Low | Great |
-| #3341 | Bump github.com/junegunn/fzf from 0.65.2 to 0.73.1 | +9/-7 | `go.mod`, `go.sum` | Low | Great |
 | #2101 | fix: add WebSocket polyfill for Electron main process | +10/-8 | `frontend/util/wsutil.ts` | Low | Great |
 | #3402 | fix(shellexec): avoid false Snap detection and empty XDG_* vars | +18/-1 | `pkg/shellexec/shellexec.go` | Low | Great |
-| #3474 | Bump js-yaml from 3.14.1 to 3.15.1 | +16/-6 | `package-lock.json` | Low | Great |
-| #3389 | Bump github.com/invopop/jsonschema from 0.13.0 to 0.14.0 | +9/-19 | `go.mod`, `go.sum` | Low | Great |
 | #2840 | Show Caps Lock indicator in SSH password prompt | +25/-4 | `frontend/app/modals/userinputmodal.tsx` | Low | Great |
 | #3182 | properly set argv0 when spawning a process | +31/-0 | `pkg/shellexec/shellexec.go` | Low | Great |
 | #2770 | fix: prevent terminal history duplication on restart | +28/-3 | `frontend/app/view/term/termwrap.ts` | Low | Great |
 | #3264 | fix: serialize IME composition with subsequent keystrokes (#3164) | +39/-2 | `frontend/app/view/term/term-model.ts`, `frontend/app/view/term/termwrap.ts` | Low | Great |
-| #3398 | Bump golang.org/x/crypto from 0.52.0 to 0.54.0 | +21/-21 | `go.mod`, `go.sum` | Low | Great |
 | #2681 | New tabs inherit working directory from active tab | +36/-6 | `pkg/wcore/workspace.go` | Low | Great |
-| #3470 | Bump brace-expansion | +22/-22 | `package-lock.json` | Low | Great |
 | #3478 | fix: serialize concurrent mermaid renders in markdown preview | +32/-14 | `frontend/app/element/markdown.tsx` | Low | Great |
 | #3476 | Fix DeepSeek multi-turn chat breaking with reasoning_content error | +29/-19 | `pkg/aiusechat/openaichat/openaichat-backend.go`, `pkg/aiusechat/openaichat/openaichat-types.go` | Low | Great |
 | #3406 | fix(term): correctly map Ctrl+[ to ESC on non-US keyboard layouts | +42/-10 | `frontend/app/view/term/term-model.ts`, `frontend/util/keyutil.ts` | Low | Great |
 | #2712 | Improve search functionality | +48/-4 | `frontend/app/element/search.tsx`, `frontend/app/store/keymodel.ts` | Low | Great |
-| #3468 | Bump mermaid from 11.15.0 to 11.16.1 | +27/-27 | `package-lock.json`, `package.json` | Low | Great |
 | #3384 | fix(#3165): OSC 8 hyperlinks not opening in the terminal | +27/-27 | `frontend/app/view/term/termwrap.ts` | Low | Great |
 
 ### Tier 3 — Medium risk (overlaps or touches conflict-prone files)
@@ -78,11 +60,8 @@ evaluated for integration into the fork via the `.patch` strategy.
 | #3270 | fix minor scroll bug with telemetry required page | +2/-1 | `frontend/app/aipanel/telemetryrequired.tsx`, `frontend/types/gotypes.d.ts` | Medium | Caution — config schema changes |
 | #2461 | Fix/terminal background color detection | +7/-3 | 3 files (`frontend/app/view/codeeditor/codeeditor.tsx`, ...) | Medium | Caution |
 | #3407 | Preserve all windows/workspaces on close, not just the last one | +12/-1 | 7 files (`docs/docs/config.mdx`, ...) | Medium | Caution — config schema changes |
-| #3379 | Bump vite from 6.4.2 to 6.4.3 | +7/-7 | 3 files (`package-lock.json`, ...) | Medium | Caution |
 | #3457 | feat(config): add macOS vibrancy state setting | +17/-0 | 6 files (`docs/docs/config.mdx`, ...) | Medium | Caution — config schema changes |
 | #2406 | wsh => wave | +18/-1 | 4 files (`pkg/remote/connutil.go`, ...) | Medium | Caution |
-| #3388 | Bump actions/checkout from 6 to 7 in /.github/workflows | +10/-10 | 7 files (`.github/workflows/build-helper.yml`, ...) | Medium | Caution |
-| #3408 | fix(term): emit distinct CSI-u sequence for Ctrl+Enter in terminal blocks | +23/-0 | 9 files (`cmd/generateschema/main-generateschema.go`, ...) | Medium | Caution — config schema changes |
 | #3308 | add Cmd+, shortcut to open Settings, Esc to close | +24/-0 | 3 files (`docs/docs/keybindings.mdx`, ...) | Medium | Caution |
 | #3358 | fix: support OAuth/SSO auth flows in webview blocks | +25/-0 | `emain/emain-tabview.ts`, `frontend/app/view/webview/webview.tsx` | Medium | Caution — overlaps existing patch |
 | #3440 | add preview:openfileinnewblock setting to open files in a new block from directory preview | +36/-6 | 7 files (`docs/docs/config.mdx`, ...) | Medium | Caution — config schema changes |
@@ -96,49 +75,43 @@ evaluated for integration into the fork via the `.patch` strategy.
 | #3401 | fix(ssh): wrap agent signers to continue to next identity on signing failure | +87/-1 | `pkg/remote/sshclient.go`, `pkg/remote/sshsigners.go` | Medium | Caution |
 | #2742 | Add drag-and-drop file support to terminal | +101/-3 | 5 files (`emain/preload.ts`, ...) | Medium | Caution — overlaps existing patch |
 | #3016 | feat: implement per-block zsh history isolation | +97/-26 | 3 files (`pkg/util/shellutil/shellintegration/zsh_zshrc.sh`, ...) | Medium | Caution |
-| #3302 | Bump @babel/plugin-transform-modules-systemjs from 7.27.1 to 7.29.7 | +63/-63 | `package-lock.json` | Medium | Caution |
-| #3326 | Bump the react-major group across 1 directory with 4 updates | +34/-96 | 4 files (`docs/package.json`, ...) | Medium | Caution |
 | #3421 | add ssh agent forwarding support (ForwardAgent / ssh:forwardagent) | +128/-11 | 7 files (`docs/docs/connections.mdx`, ...) | Medium | Caution — config schema changes |
 | #2859 | feat: cmd+click to open file paths in terminal | +160/-0 | `frontend/app/view/term/term-link-provider.ts`, `frontend/app/view/term/termwrap.ts` | Medium | Caution |
-| #2835 | Tab background glow on process exit/bell | +174/-3 | 11 files (`docs/docs/config.mdx`, ...) | Medium | Caution — config schema changes |
-| #3467 | Bump electron from 41.1.0 to 41.10.3 | +38/-159 | `package-lock.json`, `package.json` | Medium | Caution |
-| #3004 | Upgrade OSC 16162 `I` to return full ZLE buffer and cursor state | +186/-43 | 8 files (`aiprompts/wave-osc-16162.md`, ...) | Medium | Caution — config schema changes |
 | #3290 | fix: preserve reasoning_content for DeepSeek chat completions | +212/-24 | 3 files (`pkg/aiusechat/openaichat/openaichat-backend.go`, ...) | Medium | Caution |
 | #3460 | fix: recover durable SSH sessions stuck falsely-attached after stream timeout (#3439) | +250/-6 | 6 files (`cmd/test-streammanager/main-test-streammanager.go`, ...) | Medium | Caution |
-| #3353 | Add Tab Lock feature: prevent close, lock icon and tab color | +269/-15 | 14 files (`frontend/app/store/keymodel.ts`, ...) | Medium | Caution — config schema changes |
-| #3086 | Test pr 1 rebased | +339/-5 | 9 files (`frontend/app/aipanel/aimessage.tsx`, ...) | Medium | Caution — config schema changes |
 | #3152 | fix: prevent "no route for conn:..." errors and add shell path expansion | +354/-0 | 3 files (`pkg/remote/conncontroller/conncontroller.go`, ...) | Medium | Caution |
-| #3056 | Bump vitest from 3.2.4 to 4.1.0 | +161/-253 | `package-lock.json`, `package.json` | Medium | Caution |
 | #3066 | Add standalone file suggestion preview and fix PreviewEnv service narrowing | +401/-38 | 7 files (`frontend/app/suggestion/suggestion.tsx`, ...) | Medium | Caution |
-| #3333 | add wsh tab commands (create, rename, focus) | +451/-0 | 8 files (`cmd/wsh/cmd/wshcmd-tab.go`, ...) | Medium | Caution — config schema changes |
-| #3070 | Add a whitelisted AI tool definition for Wave config updates | +545/-0 | `pkg/aiusechat/tools_setconfig.go`, `pkg/aiusechat/tools_setconfig_test.go` | Medium | Caution |
-| #3331 | [codex] Fix terminal IME composition handling | +526/-62 | 24 files (`Taskfile.yml`, ...) | Medium | Caution — overlaps existing patch |
-| #3346 | Bump vitest and @vitest/coverage-istanbul | +256/-453 | `package-lock.json`, `package.json` | Medium | Caution |
-| #3480 | feat: add configurable keybindings via keybindings.json | +499/-244 | 9 files (`frontend/app/store/global.ts`, ...) | Medium | Caution — config schema changes |
-| #2238 | Sysinfo: add support for AMD and NVIDIA GPUs | +927/-2 | 7 files (`docs/GPU_MONITORING.md`, ...) | Medium | Caution |
-| #2103 | refactor: enhance AI block UI/UX | +697/-252 | 6 files (`frontend/app/element/markdown.scss`, ...) | Medium | Caution |
-| #3069 | Make config preview default-aware and adopt a VS Code-style settings layout | +995/-0 | 4 files (`frontend/app/configui/configvalidation.test.ts`, ...) | Medium | Caution |
-| #3443 | File explorer bookmarks (folder / file / document-position) | +867/-200 | 22 files (`frontend/app/element/markdown-anchor.test.ts`, ...) | Medium | Caution — config schema changes |
-| #3293 | Notes widget (w/ syncing backend) | +1158/-12 | 25 files (`docs/docs/config.mdx`, ...) | Medium | Caution — config schema changes |
-| #3235 | Add block rename and preview follow terminal features | +647/-563 | 14 files (`.gitignore`, ...) | Medium | Caution — config schema changes |
-| #3450 | Bump app-builder-lib and electron-builder | +348/-877 | `package-lock.json`, `package.json` | Medium | Caution |
-| #3451 | Bump builder-util-runtime, electron-updater and electron-builder | +350/-923 | `package-lock.json`, `package.json` | Medium | Caution |
-| #2763 | add workspace directory feature with shell quoting and tests | +844/-613 | 18 files (`emain/emain-ipc.ts`, ...) | Medium | Caution — config schema changes |
-| #3263 | feat: tab templates and geolocation polyfill for webviews | +968/-593 | 19 files (`db/migrations-wstore/000012_tabtemplate.down.sql`, ...) | Medium | Caution — config schema changes |
-| #2940 | feat(term): add sixel rendering and propagate terminal pixel size to PTY | +1010/-598 | 13 files (`frontend/app/view/term/term-model.ts`, ...) | Medium | Caution — overlaps existing patch |
-| #3479 | feat: add Excalidraw diagram editor widget | +2049/-2 | 20 files (`.gitignore`, ...) | Medium | Caution — config schema changes |
-| #3399 | Feat/files widget active cwd tree | +1585/-721 | 29 files (`electron.vite.config.ts`, ...) | Medium | Caution — overlaps existing patch |
-| #3312 | feat: add three-section VTabBar with working queue and archive queue | +1349/-967 | 24 files (`.github/workflows/build-helper.yml`, ...) | Medium | Caution — config schema changes |
-| #3275 | New Direct Terminal Tsunami SubBlock + TCP over PTY system to forward ports | +3311/-162 | 61 files (`.gitignore`, ...) | Medium | Caution — overlaps existing patch |
-| #2789 | feat: Tab base directory with VS Code style redesign | +4152/-141 | 42 files (`CHANGES.md`, ...) | Medium | Caution — overlaps existing patch |
-| #3220 | feat(platform): 优化Windows平台路径处理和SSH配置文件支持 | +7925/-371 | 77 files (`.gitignore`, ...) | Medium | Caution — overlaps existing patch |
 
 ### Tier 4 — High risk (large, multi-file, features)
 
 | PR | Title | Size | Files | Risk | .patch fit |
 |----|-------|------|-------|------|------------|
+| #3408 | fix(term): emit distinct CSI-u sequence for Ctrl+Enter in terminal blocks | +23/-0 | 9 files (`cmd/generateschema/main-generateschema.go`, ...) | High | Risky |
+| #2835 | Tab background glow on process exit/bell | +174/-3 | 11 files (`docs/docs/config.mdx`, ...) | High | Risky |
+| #3004 | Upgrade OSC 16162 `I` to return full ZLE buffer and cursor state | +186/-43 | 8 files (`aiprompts/wave-osc-16162.md`, ...) | High | Risky |
+| #3353 | Add Tab Lock feature: prevent close, lock icon and tab color | +269/-15 | 14 files (`frontend/app/store/keymodel.ts`, ...) | High | Risky |
 | #3205 | feat: add quick terminal float window with double-ESC trigger | +292/-18 | 9 files (`frontend/app/store/global-atoms.ts`, ...) | High | Risky |
+| #3086 | Test pr 1 rebased | +339/-5 | 9 files (`frontend/app/aipanel/aimessage.tsx`, ...) | High | Risky |
+| #3333 | add wsh tab commands (create, rename, focus) | +451/-0 | 8 files (`cmd/wsh/cmd/wshcmd-tab.go`, ...) | High | Risky |
+| #3070 | Add a whitelisted AI tool definition for Wave config updates | +545/-0 | `pkg/aiusechat/tools_setconfig.go`, `pkg/aiusechat/tools_setconfig_test.go` | High | Risky |
+| #3331 | [codex] Fix terminal IME composition handling | +526/-62 | 24 files (`Taskfile.yml`, ...) | High | Risky |
+| #3480 | feat: add configurable keybindings via keybindings.json | +499/-244 | 9 files (`frontend/app/store/global.ts`, ...) | High | Risky |
+| #2238 | Sysinfo: add support for AMD and NVIDIA GPUs | +927/-2 | 7 files (`docs/GPU_MONITORING.md`, ...) | High | Risky |
+| #2103 | refactor: enhance AI block UI/UX | +697/-252 | 6 files (`frontend/app/element/markdown.scss`, ...) | High | Risky |
+| #3069 | Make config preview default-aware and adopt a VS Code-style settings layout | +995/-0 | 4 files (`frontend/app/configui/configvalidation.test.ts`, ...) | High | Risky |
 | #3184 | feat: add i18n framework with Chinese (zh-CN) localization | +369/-648 | 14 files (`frontend/app/aipanel/aipanel-contextmenu.ts`, ...) | High | Risky |
+| #3443 | File explorer bookmarks (folder / file / document-position) | +867/-200 | 22 files (`frontend/app/element/markdown-anchor.test.ts`, ...) | High | Risky |
+| #3293 | Notes widget (w/ syncing backend) | +1158/-12 | 25 files (`docs/docs/config.mdx`, ...) | High | Risky |
+| #3235 | Add block rename and preview follow terminal features | +647/-563 | 14 files (`.gitignore`, ...) | High | Risky |
+| #2763 | add workspace directory feature with shell quoting and tests | +844/-613 | 18 files (`emain/emain-ipc.ts`, ...) | High | Risky |
+| #3263 | feat: tab templates and geolocation polyfill for webviews | +968/-593 | 19 files (`db/migrations-wstore/000012_tabtemplate.down.sql`, ...) | High | Risky |
+| #2940 | feat(term): add sixel rendering and propagate terminal pixel size to PTY | +1010/-598 | 13 files (`frontend/app/view/term/term-model.ts`, ...) | High | Risky |
+| #3479 | feat: add Excalidraw diagram editor widget | +2049/-2 | 20 files (`.gitignore`, ...) | High | Risky |
+| #3399 | Feat/files widget active cwd tree | +1585/-721 | 29 files (`electron.vite.config.ts`, ...) | High | Risky |
+| #3312 | feat: add three-section VTabBar with working queue and archive queue | +1349/-967 | 24 files (`.github/workflows/build-helper.yml`, ...) | High | Risky |
+| #3275 | New Direct Terminal Tsunami SubBlock + TCP over PTY system to forward ports | +3311/-162 | 61 files (`.gitignore`, ...) | High | Risky |
+| #2789 | feat: Tab base directory with VS Code style redesign | +4152/-141 | 42 files (`CHANGES.md`, ...) | High | Risky |
+| #3220 | feat(platform): 优化Windows平台路径处理和SSH配置文件支持 | +7925/-371 | 77 files (`.gitignore`, ...) | High | Risky |
 
 ## Not applicable
 
@@ -151,29 +124,60 @@ evaluated for integration into the fork via the `.patch` strategy.
 | #3075 | feat: improve skill scores for waveterm | +36/-965 | 8 files (`.kilocode/skills/add-config/SKILL.md`, ...) |
 | #2218 | Add docs how to configure Docker Model Runner as the AI backend | +22/-1 | `docs/docs/ai-presets.mdx`, `docs/docs/faq.mdx` |
 
+### Dependabot (auto-managed by upstream)
+
+| PR | Title | Size |
+|----|-------|------|
+| #3474 | Bump js-yaml from 3.14.1 to 3.15.1 | +16/-6 |
+| #3473 | Bump nanoid from 3.3.11 to 3.3.18 | +3/-3 |
+| #3470 | Bump brace-expansion | +22/-22 |
+| #3468 | Bump mermaid from 11.15.0 to 11.16.1 | +27/-27 |
+| #3467 | Bump electron from 41.1.0 to 41.10.3 | +38/-159 |
+| #3465 | Bump fast-uri from 3.1.4 to 3.1.5 | +3/-3 |
+| #3461 | Bump ip-address from 10.2.0 to 10.4.0 | +3/-3 |
+| #3454 | Bump postcss from 8.5.8 to 8.5.25 | +7/-7 |
+| #3451 | Bump builder-util-runtime, electron-updater and electron-builder | +350/-923 |
+| #3450 | Bump app-builder-lib and electron-builder | +348/-877 |
+| #3447 | Bump shell-quote from 1.8.4 to 1.10.0 | +5/-5 |
+| #3398 | Bump golang.org/x/crypto from 0.52.0 to 0.54.0 | +21/-21 |
+| #3397 | Bump github.com/fsnotify/fsnotify from 1.9.0 to 1.10.1 | +3/-3 |
+| #3389 | Bump github.com/invopop/jsonschema from 0.13.0 to 0.14.0 | +9/-19 |
+| #3388 | Bump actions/checkout from 6 to 7 in /.github/workflows | +10/-10 |
+| #3379 | Bump vite from 6.4.2 to 6.4.3 | +7/-7 |
+| #3346 | Bump vitest and @vitest/coverage-istanbul | +256/-453 |
+| #3341 | Bump github.com/junegunn/fzf from 0.65.2 to 0.73.1 | +9/-7 |
+| #3326 | Bump the react-major group across 1 directory with 4 updates | +34/-96 |
+| #3302 | Bump @babel/plugin-transform-modules-systemjs from 7.27.1 to 7.29.7 | +63/-63 |
+| #3229 | Bump actions/upload-pages-artifact from 4 to 5 in /.github/workflows | +1/-1 |
+| #3227 | Bump softprops/action-gh-release from 2 to 3 in /.github/workflows | +1/-1 |
+| #3180 | Bump lodash from 4.17.23 to 4.18.1 | +3/-3 |
+| #3056 | Bump vitest from 3.2.4 to 4.1.0 | +161/-253 |
+| #2952 | Bump actions/upload-artifact from 5 to 7 in /.github/workflows | +3/-3 |
+| #2950 | Bump actions/download-artifact from 4 to 8 in /.github/workflows | +1/-1 |
+| #2422 | Bump github.com/skeema/knownhosts from 1.3.1 to 1.3.2 | +3/-3 |
+
 ## File overlap matrix
 
 Files that appear in multiple PRs — integrating one may complicate integrating another:
 
 | File | PRs |
 |------|-----|
-| `package-lock.json` | #2763, #2940, #3056, #3180, #3184, #3220, #3235, #3263, #3302, #3312, #3326, #3331, #3346, #3379, #3399, #3447, #3450, #3451, #3454, #3461, #3465, #3467, #3468, #3470, #3473, #3474, #3479 |
 | `frontend/types/gotypes.d.ts` | #2763, #2789, #2835, #2940, #3004, #3058, #3086, #3220, #3235, #3263, #3270, #3275, #3293, #3312, #3331, #3333, #3353, #3399, #3407, #3408, #3421, #3440, #3443, #3457, #3479, #3480 |
-| `package.json` | #2940, #3056, #3184, #3220, #3235, #3326, #3331, #3346, #3379, #3447, #3450, #3451, #3467, #3468, #3479 |
 | `pkg/wconfig/settingsconfig.go` | #2789, #2835, #3058, #3117, #3220, #3275, #3293, #3331, #3407, #3408, #3421, #3440, #3443, #3457, #3480 |
 | `frontend/app/view/term/termwrap.ts` | #2245, #2770, #2789, #2858, #2859, #2940, #3004, #3205, #3220, #3264, #3275, #3278, #3331, #3384 |
 | `frontend/app/view/term/term-model.ts` | #2789, #2940, #3205, #3220, #3264, #3275, #3293, #3331, #3339, #3406, #3408 |
 | `frontend/app/store/keymodel.ts` | #2678, #2712, #2789, #3205, #3275, #3308, #3331, #3353, #3399, #3480 |
+| `package-lock.json` | #2763, #2940, #3184, #3220, #3235, #3263, #3312, #3331, #3399, #3479 |
 | `schema/settings.json` | #2835, #3058, #3117, #3220, #3275, #3293, #3407, #3408, #3440, #3457 |
 | `pkg/wconfig/metaconsts.go` | #2835, #3058, #3275, #3293, #3407, #3408, #3440, #3457 |
 | `pkg/wshrpc/wshserver/wshserver.go` | #2789, #3275, #3293, #3312, #3333, #3399, #3443, #3479 |
 | `frontend/app/store/wshclientapi.ts` | #3275, #3293, #3312, #3333, #3399, #3443, #3479 |
 | `pkg/wshrpc/wshclient/wshclient.go` | #3275, #3293, #3312, #3333, #3399, #3443, #3479 |
 | `pkg/wshrpc/wshrpctypes.go` | #2238, #3275, #3293, #3312, #3333, #3443, #3479 |
-| `.github/workflows/build-helper.yml` | #2950, #2952, #3186, #3227, #3312, #3388 |
 | `emain/emain-window.ts` | #2717, #2858, #3220, #3280, #3407, #3457 |
 | `frontend/app/block/blockregistry.ts` | #3220, #3275, #3293, #3312, #3399, #3479 |
 | `frontend/app/view/term/term.tsx` **(patched)** | #2742, #2789, #2940, #3220, #3275, #3331 |
+| `package.json` | #2940, #3184, #3220, #3235, #3331, #3479 |
 | `pkg/waveobj/metaconsts.go` | #2789, #2835, #3235, #3275, #3353, #3408 |
 | `pkg/waveobj/wtypemeta.go` | #2789, #2835, #3235, #3275, #3353, #3408 |
 | `docs/docs/config.mdx` | #2835, #3293, #3407, #3440, #3457 |
@@ -182,8 +186,6 @@ Files that appear in multiple PRs — integrating one may complicate integrating
 | `frontend/app/view/preview/preview-directory.tsx` | #3220, #3343, #3399, #3440, #3443 |
 | `frontend/app/view/term/osc-handlers.ts` | #2858, #3004, #3205, #3275, #3399 |
 | `frontend/types/custom.d.ts` | #2742, #2763, #2789, #3205, #3220 |
-| `go.mod` | #2422, #3341, #3389, #3397, #3398 |
-| `go.sum` | #2422, #3341, #3389, #3397, #3398 |
 | `pkg/blockcontroller/shellcontroller.go` | #2763, #2835, #2940, #3058, #3275 |
 | `pkg/shellexec/shellexec.go` | #2940, #3152, #3182, #3402, #3421 |
 | `pkg/wconfig/defaultconfig/settings.json` | #2835, #3220, #3293, #3331, #3407 |
@@ -220,9 +222,7 @@ Files that appear in multiple PRs — integrating one may complicate integrating
 | `pkg/waveobj/objrtinfo.go` | #3004, #3086, #3293 |
 | `pkg/wps/wpstypes.go` | #3275, #3293, #3479 |
 | `pkg/wshrpc/wshremote/wshremote_file.go` | #2856, #3220, #3399 |
-| `.github/workflows/deploy-docsite.yml` | #3229, #3388 |
-| `.github/workflows/publish-release.yml` | #3312, #3388 |
-| `.github/workflows/testdriver-build.yml` | #2952, #3388 |
+| `.github/workflows/build-helper.yml` | #3186, #3312 |
 | `docs/docs/wsh-reference.mdx` | #3333, #3479 |
 | `electron.vite.config.ts` | #3399, #3479 |
 | `emain/emain-tabview.ts` | #3220, #3358 |
@@ -249,4 +249,3 @@ Files that appear in multiple PRs — integrating one may complicate integrating
 | `pkg/util/shellutil/shellutil.go` | #2406, #3016 |
 | `pkg/wavebase/wavebase.go` | #2406, #3404 |
 | `schema/widgets.json` | #3220, #3408 |
-| `tsunami/frontend/package.json` | #3326, #3379 |

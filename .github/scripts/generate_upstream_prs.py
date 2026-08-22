@@ -56,7 +56,7 @@ ALREADY_INTEGRATED = {
 }
 
 # PRs to exclude (dependabot, docs-only, etc.)
-DEPENDABOT_AUTHOR = "app/dependabot"
+DEPENDABOT_AUTHORS = {"dependabot[bot]", "app/dependabot", "github-actions[bot]"}
 
 
 @dataclass
@@ -83,7 +83,7 @@ class PR:
 
     @property
     def is_dependabot(self) -> bool:
-        return self.author == DEPENDABOT_AUTHOR
+        return self.author in DEPENDABOT_AUTHORS
 
     @property
     def is_docs_only(self) -> bool:
@@ -101,13 +101,17 @@ class PR:
     def risk(self) -> str:
         if self.is_dependabot or self.is_docs_only:
             return "N/A"
+        # Zero: tiny, single-file, no config/schema
         if self.file_count == 1 and self.total_changes < 10 and not self.touches_conflict_prone:
             return "Zero"
+        # Low: small, isolated, no overlap with patched or conflict-prone files
         if self.file_count <= 2 and self.total_changes < 60 and not self.touches_patched_files and not self.touches_conflict_prone:
             return "Low"
-        if self.touches_patched_files or self.touches_conflict_prone or self.file_count <= 7:
-            return "Medium"
-        return "High"
+        # High: large, multi-file, or touches core files
+        if self.file_count > 7 or self.total_changes > 500:
+            return "High"
+        # Medium: everything in between (touches patched/conflict-prone, or 3-7 files)
+        return "Medium"
 
     @property
     def patch_fit(self) -> str:
