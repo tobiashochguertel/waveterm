@@ -10,6 +10,13 @@ mergeable with upstream using a **revert-then-repatch** strategy.
 | `main` | Latest upstream release tag (e.g. `v0.14.5`) | Stable — well-tested patches only |
 | `dev`  | `upstream/main` (latest development) | Unstable — experimental patches welcome |
 
+## Upstream PR catalog
+
+An automated catalog of open upstream PRs is maintained at
+[`.github/UPSTREAM-PRS.md`](./PR-CATALOG.md) — see
+[`PR-CATALOG.md`](./PR-CATALOG.md) for full documentation of the generator,
+config options, and the `waveterm-prs` viewer CLI.
+
 ## What lives where
 
 ### Tier 1: Config files (NOT in this repo)
