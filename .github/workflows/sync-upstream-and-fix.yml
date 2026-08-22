@@ -25,6 +25,15 @@ on:
         default: "false"
         type: boolean
 
+# Files that carry our custom patches. These are reverted to upstream's
+# version before merging, then re-applied via scripts after the merge.
+# This avoids merge conflicts on these files while keeping all other
+# upstream changes clean.
+env:
+  PATCHED_FILES: |
+    frontend/app/view/term/term.tsx
+    frontend/app/view/webview/webview.tsx
+
 jobs:
   # ── Stable: sync main from latest upstream release tag ────────────────────
   sync-main:
@@ -93,19 +102,39 @@ jobs:
             echo "Upstream has new commits to merge into main."
           fi
 
-      - name: Merge upstream ref into main
+      - name: Revert patched files to upstream version
         if: steps.check-uptodate.outputs.up_to_date != 'true'
         run: |
           MERGE_REF="${{ steps.upstream-ref.outputs.merge_ref }}"
-          git merge "$MERGE_REF" \
-            --no-edit \
-            -m "chore: merge upstream $MERGE_REF into main [skip ci]" \
-            --strategy-option=theirs 2>&1 || {
-            echo "Merge failed — attempting with default strategy"
-            git merge --abort 2>/dev/null || true
-            git merge "$MERGE_REF" --no-edit \
-              -m "chore: merge upstream $MERGE_REF into main [skip ci]"
-          }
+          UPSTREAM_SHA=$(git rev-parse "refs/tags/$MERGE_REF" 2>/dev/null || git rev-parse "$MERGE_REF")
+          while IFS= read -r file; do
+            [[ -z "$file" ]] && continue
+            echo "Reverting $file to upstream $MERGE_REF"
+            git checkout "$UPSTREAM_SHA" -- "$file" 2>/dev/null || {
+              echo "⚠️  $file not found in upstream — it may have been removed or renamed"
+            }
+          done <<< "$PATCHED_FILES"
+          git commit -m "chore: revert patched files to upstream $MERGE_REF before merge [skip ci]" 2>/dev/null || true
+
+      - name: Merge upstream into main
+        id: merge
+        if: steps.check-uptodate.outputs.up_to_date != 'true'
+        run: |
+          MERGE_REF="${{ steps.upstream-ref.outputs.merge_ref }}"
+          if git merge "$MERGE_REF" --no-edit \
+            -m "chore: merge upstream $MERGE_REF into main [skip ci]"; then
+            echo "merge_status=success" >> "$GITHUB_OUTPUT"
+          else
+            echo "❌ Merge conflict detected — cannot auto-resolve"
+            git merge --abort
+            echo "merge_status=conflict" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Fail on merge conflict
+        if: steps.merge.outputs.merge_status == 'conflict'
+        run: |
+          echo "::error::Merge conflict with upstream ${{ steps.upstream-ref.outputs.merge_ref }}. Manual resolution required."
+          exit 1
 
       - name: Re-apply xterm fix
         if: steps.check-uptodate.outputs.up_to_date != 'true'
@@ -140,7 +169,8 @@ jobs:
             echo "## ✅ main sync complete" >> "$GITHUB_STEP_SUMMARY"
             echo "" >> "$GITHUB_STEP_SUMMARY"
             echo "- Merged: \`$MERGE_REF\`" >> "$GITHUB_STEP_SUMMARY"
-            echo "- xterm macOptionClickForcesSelection fix re-applied" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Patched files reverted to upstream, then re-applied:" >> "$GITHUB_STEP_SUMMARY"
+            echo "  - \`frontend/app/view/term/term.tsx\` (xterm cursor fix)" >> "$GITHUB_STEP_SUMMARY"
           fi
 
   # ── Unstable: sync dev from upstream/main + custom fixes ──────────────────
@@ -208,19 +238,39 @@ jobs:
             echo "Upstream has new commits to merge into dev."
           fi
 
-      - name: Merge upstream/main into dev
+      - name: Revert patched files to upstream version
         if: steps.check-uptodate.outputs.up_to_date != 'true'
         run: |
           MERGE_REF="${{ steps.upstream-ref.outputs.merge_ref }}"
-          git merge "$MERGE_REF" \
-            --no-edit \
-            -m "chore: merge upstream $MERGE_REF into dev [skip ci]" \
-            --strategy-option=theirs 2>&1 || {
-            echo "Merge failed — attempting with default strategy"
-            git merge --abort 2>/dev/null || true
-            git merge "$MERGE_REF" --no-edit \
-              -m "chore: merge upstream $MERGE_REF into dev [skip ci]"
-          }
+          UPSTREAM_SHA=$(git rev-parse "$MERGE_REF")
+          while IFS= read -r file; do
+            [[ -z "$file" ]] && continue
+            echo "Reverting $file to upstream $MERGE_REF"
+            git checkout "$UPSTREAM_SHA" -- "$file" 2>/dev/null || {
+              echo "⚠️  $file not found in upstream — it may have been removed or renamed"
+            }
+          done <<< "$PATCHED_FILES"
+          git commit -m "chore: revert patched files to upstream $MERGE_REF before merge [skip ci]" 2>/dev/null || true
+
+      - name: Merge upstream into dev
+        id: merge
+        if: steps.check-uptodate.outputs.up_to_date != 'true'
+        run: |
+          MERGE_REF="${{ steps.upstream-ref.outputs.merge_ref }}"
+          if git merge "$MERGE_REF" --no-edit \
+            -m "chore: merge upstream $MERGE_REF into dev [skip ci]"; then
+            echo "merge_status=success" >> "$GITHUB_OUTPUT"
+          else
+            echo "❌ Merge conflict detected — cannot auto-resolve"
+            git merge --abort
+            echo "merge_status=conflict" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Fail on merge conflict
+        if: steps.merge.outputs.merge_status == 'conflict'
+        run: |
+          echo "::error::Merge conflict with upstream ${{ steps.upstream-ref.outputs.merge_ref }}. Manual resolution required."
+          exit 1
 
       - name: Re-apply xterm fix
         if: steps.check-uptodate.outputs.up_to_date != 'true'
@@ -281,6 +331,7 @@ jobs:
             echo "## ✅ dev sync complete" >> "$GITHUB_STEP_SUMMARY"
             echo "" >> "$GITHUB_STEP_SUMMARY"
             echo "- Merged: \`$MERGE_REF\`" >> "$GITHUB_STEP_SUMMARY"
-            echo "- xterm macOptionClickForcesSelection fix re-applied" >> "$GITHUB_STEP_SUMMARY"
-            echo "- bookmark typeahead fix re-applied" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Patched files reverted to upstream, then re-applied:" >> "$GITHUB_STEP_SUMMARY"
+            echo "  - \`frontend/app/view/term/term.tsx\` (xterm cursor fix)" >> "$GITHUB_STEP_SUMMARY"
+            echo "  - \`frontend/app/view/webview/webview.tsx\` (bookmark typeahead fix)" >> "$GITHUB_STEP_SUMMARY"
           fi
