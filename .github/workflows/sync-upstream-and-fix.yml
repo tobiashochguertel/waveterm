@@ -47,6 +47,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
       - name: Add upstream remote
         run: |
           git remote add upstream https://github.com/wavetermdev/waveterm.git || true
@@ -99,44 +102,15 @@ jobs:
               -m "chore: merge upstream $MERGE_REF into main [skip ci]"
           }
 
-      - name: Re-apply xterm macOptionClickForcesSelection fix
+      - name: Re-apply xterm fix
+        if: steps.check-uptodate.outputs.up_to_date != 'true'
+        run: uv run --script .github/scripts/apply_xterm_fix.py
+
+      - name: Commit xterm fix
         if: steps.check-uptodate.outputs.up_to_date != 'true'
         run: |
-          TERM_TSX="frontend/app/view/term/term.tsx"
-          if [[ ! -f "$TERM_TSX" ]]; then
-            echo "⚠️  $TERM_TSX not found — skipping xterm fix"
-            exit 0
-          fi
-
-          if grep -q "macOptionClickForcesSelection: termMacOptionIsMeta" "$TERM_TSX"; then
-            echo "✅ xterm fix already present in $TERM_TSX"
-            exit 0
-          fi
-
-          python3 - << 'PYEOF'
-          import sys
-          path = "frontend/app/view/term/term.tsx"
-          with open(path) as f:
-              content = f.read()
-          OLD = "                macOptionIsMeta: termMacOptionIsMeta,"
-          NEW = """                macOptionIsMeta: termMacOptionIsMeta,
-                  // When macOptionIsMeta is enabled, also set macOptionClickForcesSelection=true.
-                  // Without this, xterm.js still activates column-select mode (crosshair cursor)
-                  // when holding Option, because shouldColumnSelect() checks
-                  // macOptionClickForcesSelection independently of macOptionIsMeta.
-                  // See: xterm.js SelectionService.ts#shouldColumnSelect()
-                  macOptionClickForcesSelection: termMacOptionIsMeta,"""
-          if OLD not in content:
-              print(f"Pattern not found in {path} — the file structure may have changed.")
-              sys.exit(1)
-          patched = content.replace(OLD, NEW, 1)
-          with open(path, "w") as f:
-              f.write(patched)
-          print(f"✅ Patched {path}")
-          PYEOF
-
-          git add "$TERM_TSX"
-          git commit -m "fix(term): disable crosshair cursor when macOptionIsMeta is enabled
+          git add frontend/app/view/term/term.tsx
+          git diff --cached --quiet || git commit -m "fix(term): disable crosshair cursor when macOptionIsMeta is enabled
 
           When term:macoptionismeta is set to true, xterm.js still activates
           column-select mode (crosshair cursor) on Option key hold because
@@ -148,10 +122,9 @@ jobs:
 
       - name: Push updated main
         if: steps.check-uptodate.outputs.up_to_date != 'true'
-        run: |
-          git push origin main
+        run: git push origin main
 
-      - name: Create summary
+      - name: Summary
         run: |
           MERGE_REF="${{ steps.upstream-ref.outputs.merge_ref }}"
           UP_TO_DATE="${{ steps.check-uptodate.outputs.up_to_date }}"
@@ -185,6 +158,9 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
 
       - name: Add upstream remote
         run: |
@@ -236,44 +212,15 @@ jobs:
               -m "chore: merge upstream $MERGE_REF into dev [skip ci]"
           }
 
-      - name: Re-apply xterm macOptionClickForcesSelection fix
+      - name: Re-apply xterm fix
+        if: steps.check-uptodate.outputs.up_to_date != 'true'
+        run: uv run --script .github/scripts/apply_xterm_fix.py
+
+      - name: Commit xterm fix
         if: steps.check-uptodate.outputs.up_to_date != 'true'
         run: |
-          TERM_TSX="frontend/app/view/term/term.tsx"
-          if [[ ! -f "$TERM_TSX" ]]; then
-            echo "⚠️  $TERM_TSX not found — skipping xterm fix"
-            exit 0
-          fi
-
-          if grep -q "macOptionClickForcesSelection: termMacOptionIsMeta" "$TERM_TSX"; then
-            echo "✅ xterm fix already present in $TERM_TSX"
-            exit 0
-          fi
-
-          python3 - << 'PYEOF'
-          import sys
-          path = "frontend/app/view/term/term.tsx"
-          with open(path) as f:
-              content = f.read()
-          OLD = "                macOptionIsMeta: termMacOptionIsMeta,"
-          NEW = """                macOptionIsMeta: termMacOptionIsMeta,
-                  // When macOptionIsMeta is enabled, also set macOptionClickForcesSelection=true.
-                  // Without this, xterm.js still activates column-select mode (crosshair cursor)
-                  // when holding Option, because shouldColumnSelect() checks
-                  // macOptionClickForcesSelection independently of macOptionIsMeta.
-                  // See: xterm.js SelectionService.ts#shouldColumnSelect()
-                  macOptionClickForcesSelection: termMacOptionIsMeta,"""
-          if OLD not in content:
-              print(f"Pattern not found in {path} — the file structure may have changed.")
-              sys.exit(1)
-          patched = content.replace(OLD, NEW, 1)
-          with open(path, "w") as f:
-              f.write(patched)
-          print(f"✅ Patched {path}")
-          PYEOF
-
-          git add "$TERM_TSX"
-          git commit -m "fix(term): disable crosshair cursor when macOptionIsMeta is enabled
+          git add frontend/app/view/term/term.tsx
+          git diff --cached --quiet || git commit -m "fix(term): disable crosshair cursor when macOptionIsMeta is enabled
 
           When term:macoptionismeta is set to true, xterm.js still activates
           column-select mode (crosshair cursor) on Option key hold because
@@ -285,64 +232,13 @@ jobs:
 
       - name: Re-apply bookmark typeahead fix
         if: steps.check-uptodate.outputs.up_to_date != 'true'
+        run: uv run --script .github/scripts/apply_bookmark_fix.py
+
+      - name: Commit bookmark fix
+        if: steps.check-uptodate.outputs.up_to_date != 'true'
         run: |
-          WEBVIEW_TSX="frontend/app/view/webview/webview.tsx"
-          if [[ ! -f "$WEBVIEW_TSX" ]]; then
-            echo "⚠️  $WEBVIEW_TSX not found — skipping bookmark fix"
-            exit 0
-          fi
-
-          if grep -q "fetchBookmarkSuggestions = async" "$WEBVIEW_TSX"; then
-            echo "✅ bookmark fix already present in $WEBVIEW_TSX"
-            exit 0
-          fi
-
-          python3 - << 'PYEOF'
-          import sys
-          path = "frontend/app/view/webview/webview.tsx"
-          with open(path) as f:
-              content = f.read()
-
-          # Fix 1: Convert method to arrow function field
-          OLD_METHOD = """    async fetchBookmarkSuggestions(
-        query: string,
-        reqContext: SuggestionRequestContext
-    ): Promise<FetchSuggestionsResponse> {"""
-          NEW_ARROW = """    fetchBookmarkSuggestions = async (
-        query: string,
-        reqContext: SuggestionRequestContext
-    ): Promise<FetchSuggestionsResponse> => {"""
-          if OLD_METHOD not in content:
-              print("fetchBookmarkSuggestions method pattern not found — may already be fixed or file structure changed.")
-              sys.exit(1)
-          content = content.replace(OLD_METHOD, NEW_ARROW, 1)
-
-          # Fix 2: Close the arrow function with semicolon
-          OLD_RETURN = """        return result;
-    }
-
-    handleUrlWrapperMouseOver"""
-          NEW_RETURN = """        return result;
-    };
-
-    handleUrlWrapperMouseOver"""
-          if OLD_RETURN not in content:
-              print("Closing brace pattern not found — may already be fixed.")
-              sys.exit(1)
-          content = content.replace(OLD_RETURN, NEW_RETURN, 1)
-
-          # Fix 3: Fix bookmarks.json path
-          OLD_PATH = "${env.electron.getConfigDir()}/presets/bookmarks.json"
-          NEW_PATH = "${env.electron.getConfigDir()}/bookmarks.json"
-          content = content.replace(OLD_PATH, NEW_PATH)
-
-          with open(path, "w") as f:
-              f.write(content)
-          print(f"✅ Patched {path}")
-          PYEOF
-
-          git add "$WEBVIEW_TSX"
-          git commit -m "fix(webview): fix bookmark typeahead not rendering suggestions
+          git add frontend/app/view/webview/webview.tsx
+          git diff --cached --quiet || git commit -m "fix(webview): fix bookmark typeahead not rendering suggestions
 
           Convert fetchBookmarkSuggestions from a regular method to an arrow
           function field so \`this\` stays bound when passed as a callback to
@@ -362,10 +258,9 @@ jobs:
 
       - name: Push updated dev
         if: steps.check-uptodate.outputs.up_to_date != 'true'
-        run: |
-          git push origin dev
+        run: git push origin dev
 
-      - name: Create summary
+      - name: Summary
         run: |
           MERGE_REF="${{ steps.upstream-ref.outputs.merge_ref }}"
           UP_TO_DATE="${{ steps.check-uptodate.outputs.up_to_date }}"
