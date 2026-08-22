@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Md Render F6_Zqnyz</title>
+<style>
+  :root {
+    --bg: #1a1a2e;
+    --surface: #16213e;
+    --surface2: #0f3460;
+    --text: #e0e0e0;
+    --text-dim: #a0a0b0;
+    --accent: #e94560;
+    --border: #30475e;
+    --green: #4caf50;
+    --yellow: #ffc107;
+    --blue: #2196f3;
+    --code-bg: #0d1117;
+    --table-stripe: #1e2a4a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0;
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px; line-height: 1.7;
+  }
+  .container { max-width: 1600px; margin: 0 auto; padding: 2rem 3rem; }
+  h1 { color: var(--accent); font-size: 2rem; border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; margin-top: 2rem; }
+  h2 { color: var(--blue); font-size: 1.5rem; margin-top: 2.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.3rem; }
+  h3 { color: var(--text); font-size: 1.2rem; margin-top: 1.5rem; }
+  p { margin: 0.8rem 0; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.95rem; }
+  th { background: var(--surface2); color: var(--text); text-align: left; padding: 0.6rem 1rem; border: 1px solid var(--border); font-weight: 600; }
+  td { padding: 0.5rem 1rem; border: 1px solid var(--border); }
+  tr:nth-child(even) td { background: var(--table-stripe); }
+  tr:nth-child(odd) td { background: var(--surface); }
+  code { background: var(--code-bg); color: #c9d1d9; padding: 0.15rem 0.4rem; border-radius: 4px; font-family: "SF Mono", "Fira Code", "JetBrains Mono", Consolas, monospace; font-size: 0.9em; }
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.5rem; overflow-x: auto; }
+  pre code { background: none; padding: 0; font-size: 0.9rem; line-height: 1.5; }
+  ul, ol { padding-left: 1.5rem; }
+  li { margin: 0.3rem 0; }
+  strong { color: #fff; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+  blockquote { border-left: 3px solid var(--accent); margin: 1rem 0; padding: 0.5rem 1.5rem; color: var(--text-dim); background: var(--surface); border-radius: 0 8px 8px 0; }
+  img { max-width: 100%; height: auto; display: block; margin: 1.5rem auto; border-radius: 8px; background: #fff; padding: 1rem; }
+  .diagram { width: 100%; margin: 1.5rem 0; background: #fff; border-radius: 8px; padding: 1rem; overflow-x: auto; }
+  .diagram svg, .diagram object { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+  .diagram object { width: 100%; min-height: 200px; }
+  @media (min-width: 1600px) { .container { max-width: 1800px; padding: 2rem 4rem; } body { font-size: 17px; } }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="container">
+<h1 id="fork-development-workflow">Fork Development Workflow</h1>
+<p>This document describes how to develop new features for WaveTerm
+while keeping the fork mergeable with upstream. It covers the branch
+model, the sync workflow, and the two integration strategies (direct
+merge vs <code>.patch</code> file).</p>
+<p>For the mechanical details of the sync workflow, see <a
+href="../../.github/FORK-STRATEGY.md"><code>FORK-STRATEGY.md</code></a>.
+For the PR catalog system, see <a
+href="../../.github/PR-CATALOG.md"><code>PR-CATALOG.md</code></a>.</p>
+<hr />
+<h2 id="branch-model">Branch model</h2>
+<div class="diagram">
+<object data="fork-branch-model.svg" type="image/svg+xml" aria-label="Branch Model"></object>
+</div>
+<table>
+<colgroup>
+<col style="width: 32%" />
+<col style="width: 32%" />
+<col style="width: 36%" />
+</colgroup>
+<thead>
+<tr>
+<th>Branch</th>
+<th>Tracks</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>main</code></td>
+<td>Latest upstream release tag (e.g. <code>v0.14.5</code>)</td>
+<td>Stable — well-tested patches only</td>
+</tr>
+<tr>
+<td><code>dev.patch</code></td>
+<td><code>upstream/main</code> (latest development)</td>
+<td>Unstable — experimental patches welcome</td>
+</tr>
+<tr>
+<td><code>feature/*</code></td>
+<td>Branched from <code>dev.patch</code></td>
+<td>Temporary development branches</td>
+</tr>
+</tbody>
+</table>
+<p>The sync workflow runs daily and syncs both <code>main</code> and
+<code>dev.patch</code> with upstream in parallel. Feature branches are
+never touched by the workflow.</p>
+<hr />
+<h2 id="the-sync-workflow">The sync workflow</h2>
+<p>The <code>sync-upstream-and-fix.yml</code> workflow runs daily at
+07:00 UTC (or manually) and keeps both branches up to date with upstream
+using the <strong>revert-then-repatch</strong> strategy.</p>
+<div class="diagram">
+<object data="fork-sync-workflow.svg" type="image/svg+xml" aria-label="Sync Workflow"></object>
+</div>
+<h3 id="how-it-works">How it works</h3>
+<p>For each branch, the workflow:</p>
+<ol type="1">
+<li><strong>Fetches upstream</strong> — tags and branches</li>
+<li><strong>Checks if already up to date</strong> — skips if upstream
+has no new commits</li>
+<li><strong>Reverts all <code>PATCHED_FILES</code></strong> to
+upstream’s version and commits — this removes our custom changes so the
+merge won’t conflict on those files</li>
+<li><strong>Merges upstream</strong> — normal <code>git merge</code>, no
+strategy override. If this conflicts on non-patched files, the workflow
+<strong>fails loudly</strong></li>
+<li><strong>Re-applies all patches</strong> via
+<code>apply_patches.sh</code> — loops over
+<code>.github/patches/*.patch</code> in order, with idempotency check.
+If a patch doesn’t apply cleanly, the workflow <strong>fails
+loudly</strong></li>
+<li><strong>Commits and pushes</strong> the re-applied patches</li>
+</ol>
+<h3 id="why-revert-then-repatch">Why revert-then-repatch?</h3>
+<p><code>--strategy-option=theirs</code> silently lets upstream
+overwrite custom patches. The revert-then-repatch approach:</p>
+<ul>
+<li><strong>Guarantees patches are always re-applied</strong> on the
+latest upstream code</li>
+<li><strong>Fails loudly</strong> if upstream changed the surrounding
+code (<code>git apply</code> fails)</li>
+<li><strong>Fails loudly</strong> if there are conflicts on files we
+don’t patch</li>
+<li><strong>Never silently drops</strong> a custom change</li>
+</ul>
+<hr />
+<h2 id="developing-a-new-feature">Developing a new feature</h2>
+<h3 id="phase-1-develop-normally">Phase 1: Develop normally</h3>
+<p>Branch from <code>dev.patch</code> and develop exactly as you
+normally would — edit files, commit freely, use <code>npm run dev</code>
+for hot reload. No <code>.patch</code> files, no thinking about the sync
+workflow.</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> checkout dev.patch</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> checkout <span class="at">-b</span> feature/browser-widget</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Develop as usual</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> run dev              <span class="co"># hot reload</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> build ./pkg/...       <span class="co"># backend</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> test ./pkg/...        <span class="co"># tests</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> add <span class="at">-A</span> <span class="kw">&amp;&amp;</span> <span class="fu">git</span> commit <span class="at">-m</span> <span class="st">&quot;wip: scaffolding&quot;</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> add <span class="at">-A</span> <span class="kw">&amp;&amp;</span> <span class="fu">git</span> commit <span class="at">-m</span> <span class="st">&quot;feat: wire up backend&quot;</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> add <span class="at">-A</span> <span class="kw">&amp;&amp;</span> <span class="fu">git</span> commit <span class="at">-m</span> <span class="st">&quot;fix: handle navigation&quot;</span></span></code></pre></div>
+<h3 id="phase-2-choose-integration-strategy">Phase 2: Choose integration
+strategy</h3>
+<p>When the feature is stable, decide how to integrate it into
+<code>dev.patch</code>:</p>
+<div class="diagram">
+<object data="fork-decision-flow.svg" type="image/svg+xml" aria-label="Decision: Direct Merge vs .patch"></object>
+</div>
+<p><strong>Direct merge</strong> — simple, works for small isolated
+changes:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> checkout dev.patch</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> merge feature/browser-widget</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> push origin dev.patch</span></code></pre></div>
+<p><strong><code>.patch</code> file</strong> — required for large
+features or files upstream changes frequently. The sync workflow then
+automatically maintains the patch across upstream merges.</p>
+<h3 id="phase-3-convert-to-.patch-if-needed">Phase 3: Convert to
+<code>.patch</code> (if needed)</h3>
+<div class="diagram">
+<object data="fork-add-patch.svg" type="image/svg+xml" aria-label="Adding a New Patch"></object>
+</div>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Generate the patch from your feature branch</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> diff upstream/main...feature/browser-widget <span class="op">&gt;</span> .github/patches/005-browser-widget.patch</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Test it applies cleanly on dev.patch</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> checkout dev.patch</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> checkout upstream/main <span class="at">--</span> <span class="op">&lt;</span>modified files<span class="op">&gt;</span>   <span class="co"># revert to upstream version</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> apply <span class="at">--check</span> .github/patches/005-browser-widget.patch</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Apply for real and verify</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> apply .github/patches/005-browser-widget.patch</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> run build:dev <span class="kw">&amp;&amp;</span> <span class="ex">go</span> build ./pkg/... <span class="kw">&amp;&amp;</span> <span class="ex">go</span> test ./pkg/...</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="co"># 4. Verify idempotency (so apply_patches.sh can detect already-applied state)</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> apply <span class="at">--reverse</span> <span class="at">--check</span> .github/patches/005-browser-widget.patch</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="co"># 5. Register in maintenance system</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="co">#    - Add modified files to PATCHED_FILES in sync-upstream-and-fix.yml</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="co">#    - Add entry to ALREADY_INTEGRATED in generate_upstream_prs.py</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="co">#    - Update workflow commit message</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="co"># 6. Commit and push</span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> add <span class="at">-A</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">&quot;feat: add browser widget via .patch&quot;</span></span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> push origin dev.patch</span></code></pre></div>
+<hr />
+<h2 id="iterating-on-an-existing-patch">Iterating on an existing
+patch</h2>
+<p>Once your feature is a <code>.patch</code> file on
+<code>dev.patch</code> and you want to make further changes:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Branch from dev.patch (which already has your patch applied)</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> checkout dev.patch</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> checkout <span class="at">-b</span> feature/browser-widget-v2</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Develop normally...</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> add <span class="at">-A</span> <span class="kw">&amp;&amp;</span> <span class="fu">git</span> commit <span class="at">-m</span> <span class="st">&quot;feat: add tab support&quot;</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co"># When done, regenerate the patch from the updated feature branch</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> diff upstream/main...feature/browser-widget-v2 <span class="op">&gt;</span> .github/patches/005-browser-widget.patch</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Test and merge back to dev.patch</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> checkout dev.patch</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> apply <span class="at">--check</span> .github/patches/005-browser-widget.patch   <span class="co"># should pass</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="co"># ... apply, commit, push</span></span></code></pre></div>
+<p>The old <code>.patch</code> file is overwritten with the new version.
+The sync workflow will use the updated patch on its next run.</p>
+<hr />
+<h2 id="integrating-an-upstream-pr">Integrating an upstream PR</h2>
+<p>When you find an upstream PR you want to integrate (e.g. from the <a
+href="../../.github/UPSTREAM-PRS.md">PR catalog</a>):</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Fetch the PR branch</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> fetch upstream pull/<span class="op">&lt;</span>PR_NUMBER<span class="op">&gt;</span>/head:pr-<span class="op">&lt;</span>PR_NUMBER<span class="op">&gt;</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate the patch from the PR&#39;s merge base to its head</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="va">MERGE_BASE</span><span class="op">=</span><span class="va">$(</span><span class="fu">git</span> merge-base pr-<span class="op">&lt;</span>PR_NUMBER<span class="op">&gt;</span> upstream/main<span class="va">)</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> diff <span class="st">&quot;</span><span class="va">$MERGE_BASE</span><span class="st">&quot;</span>..pr-<span class="op">&lt;</span>PR_NUMBER<span class="op">&gt;</span> <span class="op">&gt;</span> .github/patches/NNN-description.patch</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Test, register, and commit — same as Phase 3 above</span></span></code></pre></div>
+<p>This is exactly how PR #3443 (file explorer bookmarks) was integrated
+— see <code>004-file-explorer-bookmarks.patch</code> for a real
+example.</p>
+<hr />
+<h2 id="diagrams">Diagrams</h2>
+<p>The PlantUML source files for the diagrams in this document are in
+the same directory:</p>
+<table>
+<colgroup>
+<col style="width: 30%" />
+<col style="width: 26%" />
+<col style="width: 43%" />
+</colgroup>
+<thead>
+<tr>
+<th>Diagram</th>
+<th>Source</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Branch Model</td>
+<td><code>fork-branch-model.puml</code></td>
+<td>Branch relationships and tracking</td>
+</tr>
+<tr>
+<td>Sync Workflow</td>
+<td><code>fork-sync-workflow.puml</code></td>
+<td>The revert-then-repatch sequence</td>
+</tr>
+<tr>
+<td>Decision Flow</td>
+<td><code>fork-decision-flow.puml</code></td>
+<td>When to use direct merge vs <code>.patch</code></td>
+</tr>
+<tr>
+<td>Add Patch</td>
+<td><code>fork-add-patch.puml</code></td>
+<td>The 3-phase process of adding a new patch</td>
+</tr>
+</tbody>
+</table>
+<p>Render with:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> docs/fork-workflow</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">plantuml-render</span> render <span class="pp">*</span>.puml <span class="at">-t</span> svg</span></code></pre></div>
+</div>
+</body>
+</html>

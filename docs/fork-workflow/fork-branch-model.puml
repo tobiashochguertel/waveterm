@@ -1,0 +1,44 @@
+@startuml fork-branch-model
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam rectangle {
+    BackgroundColor #E8F0FE
+    BorderColor #4285F4
+    FontColor #202124
+}
+skinparam note {
+    BackgroundColor #FFF9C4
+    BorderColor #FBC02D
+}
+skinparam arrow {
+    Color #5F6368
+}
+
+rectangle "upstream/main\n(wavetermdev/waveterm)" as upstream #D5E8D4
+
+rectangle "**main**\n(stable)" as main #DAE8FC
+note right of main
+  Tracks: latest upstream release tag
+  (e.g. v0.14.5)
+  Patches: well-tested only
+end note
+
+rectangle "**dev.patch**\n(unstable)" as devpatch #D5E8D4
+note right of devpatch
+  Tracks: upstream/main
+  Patches: experimental welcome
+end note
+
+rectangle "**feature/xxx**\n(temporary)" as feature #FFE6CC
+note right of feature
+  Branched from dev.patch
+  Normal development
+  Merged back when stable
+end note
+
+upstream -[#388E3C]-> main : "sync workflow\n(merge release tag)"
+upstream -[#388E3C]-> devpatch : "sync workflow\n(merge upstream/main)"
+devpatch -[#F57C00]-> feature : "git checkout -b"
+feature -[#F57C00]-> devpatch : "merge or .patch"
+
+@enduml
