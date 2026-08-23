@@ -54,6 +54,10 @@ Current patches:
 | bookmark typeahead fix | `002-bookmark-typeahead-fix.patch` | `frontend/app/view/webview/webview.tsx` | `dev.patch` only |
 | focus fix | `003-focus-fix.patch` | `frontend/app/block/block.tsx` | `dev.patch` only |
 | file explorer bookmarks | `004-file-explorer-bookmarks.patch` | 22 files (see PR #3443) | `dev.patch` only |
+| ssh agent forwarding | `005-ssh-agent-forwarding.patch` | 7 files (see PR #3421) | `dev.patch` only |
+| ssh durable session recovery | `006-ssh-durable-session-recovery.patch` | 6 files (see PR #3460) | `dev.patch` only |
+| ssh agent signer failover | `007-ssh-agent-signer-failover.patch` | 2 files (see PR #3401) | `dev.patch` only |
+| ssh caps lock indicator | `008-ssh-capslock-indicator.patch` | `frontend/app/modals/userinputmodal.tsx` | `dev.patch` only |
 
 ## How the sync works
 
