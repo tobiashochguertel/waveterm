@@ -65,6 +65,22 @@ PATCHED_FILES = {
     "pkg/wshrpc/wshclient/wshclient.go",
     "pkg/wshrpc/wshrpctypes.go",
     "pkg/wshrpc/wshserver/wshserver.go",
+    # PR #3421 — ssh agent forwarding
+    "docs/docs/connections.mdx",
+    "schema/connections.json",
+    "pkg/remote/conncontroller/conncontroller.go",
+    "pkg/remote/sshclient.go",
+    "pkg/shellexec/shellexec.go",
+    # PR #3460 — durable SSH session recovery
+    "cmd/test-streammanager/main-test-streammanager.go",
+    "pkg/jobcontroller/jobcontroller.go",
+    "pkg/jobmanager/jobmanager.go",
+    "pkg/jobmanager/mainserverconn.go",
+    "pkg/jobmanager/streammanager.go",
+    "pkg/jobmanager/streammanager_test.go",
+    # PR #3401 — ssh agent signer failover (sshclient.go already listed)
+    # PR #2840 — caps lock indicator
+    "frontend/app/modals/userinputmodal.tsx",
 }
 
 # Files that are conflict-prone in upstream (frequently changed, config schemas)
@@ -81,6 +97,10 @@ CONFLICT_PRONE_FILES = {
 
 # PRs already integrated in this fork
 ALREADY_INTEGRATED = {
+    3460: ("fix: recover durable SSH sessions stuck falsely-attached after stream timeout", "dev.patch", "006-ssh-durable-session-recovery.patch"),
+    3421: ("add ssh agent forwarding support (ForwardAgent / ssh:forwardagent)", "dev.patch", "005-ssh-agent-forwarding.patch"),
+    3401: ("fix(ssh): wrap agent signers to continue to next identity on signing failure", "dev.patch", "007-ssh-agent-signer-failover.patch"),
+    2840: ("Show Caps Lock indicator in SSH password prompt", "dev.patch", "008-ssh-capslock-indicator.patch"),
     3443: ("File explorer bookmarks (folder / file / document-position)", "dev.patch", "004-file-explorer-bookmarks.patch"),
     3429: ("fix: stop a de-focusing block from re-grabbing focus", "dev.patch", "003-focus-fix.patch"),
     3420: ("Fix bookmark typeahead not rendering suggestions", "dev.patch", "002-bookmark-typeahead-fix.patch"),

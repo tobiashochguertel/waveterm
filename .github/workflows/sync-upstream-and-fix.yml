@@ -36,6 +36,7 @@ env:
     frontend/app/block/block.tsx
     frontend/app/element/markdown.tsx
     frontend/app/modals/modalregistry.tsx
+    frontend/app/modals/userinputmodal.tsx
     frontend/app/store/wshclientapi.ts
     frontend/app/view/preview/preview-directory.tsx
     frontend/app/view/preview/preview-edit.tsx
@@ -43,10 +44,21 @@ env:
     frontend/app/view/preview/preview-model.tsx
     frontend/preview/mock/defaultconfig.ts
     frontend/types/gotypes.d.ts
+    docs/docs/connections.mdx
+    schema/connections.json
     pkg/wconfig/settingsconfig.go
     pkg/wshrpc/wshclient/wshclient.go
     pkg/wshrpc/wshrpctypes.go
     pkg/wshrpc/wshserver/wshserver.go
+    pkg/remote/conncontroller/conncontroller.go
+    pkg/remote/sshclient.go
+    pkg/shellexec/shellexec.go
+    cmd/test-streammanager/main-test-streammanager.go
+    pkg/jobcontroller/jobcontroller.go
+    pkg/jobmanager/jobmanager.go
+    pkg/jobmanager/mainserverconn.go
+    pkg/jobmanager/streammanager.go
+    pkg/jobmanager/streammanager_test.go
 
 jobs:
   # ── Stable: sync main from latest upstream release tag ────────────────────
@@ -265,7 +277,7 @@ jobs:
       - name: Commit patches
         if: steps.check-uptodate.outputs.up_to_date != 'true'
         run: |
-          git add frontend/ pkg/
+          git add frontend/ pkg/ docs/ schema/ cmd/
           git diff --cached --quiet || git commit -m "fix: re-apply custom patches after upstream merge
 
           Patches applied:
@@ -273,6 +285,10 @@ jobs:
           - 002-bookmark-typeahead-fix.patch (PR #3420)
           - 003-focus-fix.patch (PR #3429)
           - 004-file-explorer-bookmarks.patch (PR #3443)
+          - 005-ssh-agent-forwarding.patch (PR #3421)
+          - 006-ssh-durable-session-recovery.patch (PR #3460)
+          - 007-ssh-agent-signer-failover.patch (PR #3401)
+          - 008-ssh-capslock-indicator.patch (PR #2840)
 
           Co-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
 
@@ -296,4 +312,8 @@ jobs:
             echo "  - 002-bookmark-typeahead-fix.patch" >> "$GITHUB_STEP_SUMMARY"
             echo "  - 003-focus-fix.patch" >> "$GITHUB_STEP_SUMMARY"
             echo "  - 004-file-explorer-bookmarks.patch" >> "$GITHUB_STEP_SUMMARY"
+            echo "  - 005-ssh-agent-forwarding.patch" >> "$GITHUB_STEP_SUMMARY"
+            echo "  - 006-ssh-durable-session-recovery.patch" >> "$GITHUB_STEP_SUMMARY"
+            echo "  - 007-ssh-agent-signer-failover.patch" >> "$GITHUB_STEP_SUMMARY"
+            echo "  - 008-ssh-capslock-indicator.patch" >> "$GITHUB_STEP_SUMMARY"
           fi

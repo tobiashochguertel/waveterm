@@ -1,0 +1,346 @@
+diff --git a/docs/docs/connections.mdx b/docs/docs/connections.mdx
+index b5b050da..359c171a 100644
+--- a/docs/docs/connections.mdx
++++ b/docs/docs/connections.mdx
+@@ -101,6 +101,7 @@ At the moment, we are capable of parsing any SSH config file that does not conta
+ |PreferredAuthentications| (partial) Specifies the order the client should attempt to authenticate in. It is partially implemented as it does not support `gssapi-with-mic` or `hostbased` authentication. The default is `publickey,keyboard-interactive,password`|
+ |AddKeysToAgent| (partial) This option will automatically add keys and their corresponding passphrase to your running ssh agent if it is enabled. It is partially supported as it can only accept `yes` and `no` as valid inputs. Other inputs such as `confirm` or a time interval will behave the same as `no`. The default value is `no`.|
+ |IdentityAgent| Specifies the Unix Domain Socket used to communicate with the SSH Agent. This is used to overwrite the SSH_AUTH_SOCK identity agent.|
++|ForwardAgent| (partial) Specifies whether the connection to the ssh agent will be forwarded to the remote machine. It is partially supported as it can only accept `yes` and `no` as valid inputs. Other inputs such as an explicit socket path or environment variable name will behave the same as `no`. The default value is `no`.|
+ |IdentitiesOnly| Specifies that only the specified authentication identity files should be used. This is either the default files or the ones specified with the IdentityFile keyword. It can accept `yes` or `no`. The default value is `no`.|
+ |ProxyJump| Specifies one or more jump proxies in a comma separated list. Each will be visited sequentially using TCP forwarding before connecting to the desired connection (also using TCP forwarding). It can be set to `none` to disable the feature.|
+ |UserKnownHostsFile| Provides the location of one or more user host key database files for recording trusted remote connections. The filenames are entered in the same string and separated by whitespace. The default value is `"~/.ssh/known_hosts ~/.ssh/known_hosts2"`.|
+@@ -155,6 +156,7 @@ In addition to the regular ssh config file, wave also has its own config file to
+ | ssh:preferredauthentications | A list of strings indicating an ordering of different types of authentications. Each authentication type will be tried in order. This supports `"publickey"`, `"keyboard-interactive"`, and `"password"` as valid types. Other types of authentication are not handled and will be skipped. Can be used to override the value in `~/.ssh/config` or to set it if the ssh config is being ignored.|
+ | ssh:addkeystoagent | A boolean indicating if the keys used for a connection should be added to the ssh agent. Can be used to override the value in `~/.ssh/config` or to set it if the ssh config is being ignored.|
+ | ssh:identityagent | A string giving the path to the unix domain socket of the identity agent. Can be used to overwrite the value in `~/.ssh/config` or to set it if the ssh config is being ignored.|
++| ssh:forwardagent | A boolean indicating if the connection to the ssh agent will be forwarded to the remote machine. Can be used to override the value in `~/.ssh/config` or to set it if the ssh config is being ignored.|
+ | ssh:proxyjump | A list of strings specifying the names of hosts that must be successively visited with tcp forwarding to establish a connection. Can be used to overwrite the value in `~/.ssh/config` or to set it if the ssh config is being ignored.|
+ | ssh:userknownhostsfile | A list containing the paths of any user host key database files used to keep track of authorized connections. Can be used to overwrite the value in `~/.ssh/config` or to set it if the ssh config is being ignored.|
+ | ssh:globalknownhostsfile | A list containing the paths of any global host key database files used to keep track of authorized connections. Can be used to overwrite the value in `~/.ssh/config` or to set it if the ssh config is being ignored.|
+diff --git a/frontend/types/gotypes.d.ts b/frontend/types/gotypes.d.ts
+index c5b870d7..c4178430 100644
+--- a/frontend/types/gotypes.d.ts
++++ b/frontend/types/gotypes.d.ts
+@@ -850,6 +850,7 @@ declare global {
+         "ssh:preferredauthentications"?: string[];
+         "ssh:addkeystoagent"?: boolean;
+         "ssh:identityagent"?: string;
++        "ssh:forwardagent"?: boolean;
+         "ssh:identitiesonly"?: boolean;
+         "ssh:proxyjump"?: string[];
+         "ssh:userknownhostsfile"?: string[];
+diff --git a/pkg/remote/conncontroller/conncontroller.go b/pkg/remote/conncontroller/conncontroller.go
+index a24a7890..c68c7fd3 100644
+--- a/pkg/remote/conncontroller/conncontroller.go
++++ b/pkg/remote/conncontroller/conncontroller.go
+@@ -82,6 +82,7 @@ type SSHConn struct {
+ 	WshEnabled         *atomic.Bool
+ 	Opts               *remote.SSHOpts
+ 	Client             *ssh.Client
++	ForwardAgent       bool
+ 	DomainSockName     string // if "", then no domain socket
+ 	DomainSockListener net.Listener
+ 	ConnController     *ssh.Session
+@@ -695,6 +696,12 @@ func (conn *SSHConn) GetClient() *ssh.Client {
+ 	return conn.Client
+ }
+ 
++func (conn *SSHConn) GetForwardAgent() bool {
++	conn.lock.Lock()
++	defer conn.lock.Unlock()
++	return conn.ForwardAgent
++}
++
+ func (conn *SSHConn) GetMonitor() *ConnMonitor {
+ 	conn.lock.Lock()
+ 	defer conn.lock.Unlock()
+@@ -952,7 +959,7 @@ func (conn *SSHConn) persistWshInstalled(ctx context.Context, result WshCheckRes
+ // returns (connect-error)
+ func (conn *SSHConn) connectInternal(ctx context.Context, connFlags *wconfig.ConnKeywords) error {
+ 	conn.Infof(ctx, "connectInternal %s\n", conn.GetName())
+-	client, _, err := remote.ConnectToClient(ctx, conn.Opts, nil, 0, connFlags)
++	client, forwardAgent, _, err := remote.ConnectToClient(ctx, conn.Opts, nil, 0, connFlags)
+ 	if err != nil {
+ 		conn.Infof(ctx, "ERROR ConnectToClient: %s\n", remote.SimpleMessageFromPossibleConnectionError(err))
+ 		log.Printf("error: failed to connect to client %s: %s\n", conn.GetName(), err)
+@@ -964,6 +971,7 @@ func (conn *SSHConn) connectInternal(ctx context.Context, connFlags *wconfig.Con
+ 			conn.Monitor = nil
+ 		}
+ 		conn.Client = client
++		conn.ForwardAgent = forwardAgent
+ 		conn.ConnHealthStatus = ConnHealthStatus_Good
+ 		conn.Monitor = MakeConnMonitor(conn, client)
+ 	})
+diff --git a/pkg/remote/sshclient.go b/pkg/remote/sshclient.go
+index b1c9faca..6999b530 100644
+--- a/pkg/remote/sshclient.go
++++ b/pkg/remote/sshclient.go
+@@ -11,6 +11,7 @@ import (
+ 	"encoding/base64"
+ 	"errors"
+ 	"fmt"
++	"io"
+ 	"log"
+ 	"math"
+ 	"net"
+@@ -838,6 +839,67 @@ func createClientConfig(connCtx context.Context, sshKeywords *wconfig.ConnKeywor
+ 	}, nil
+ }
+ 
++// unlike x/crypto's agent.ForwardToAgent, this dials the agent freshly for
++// each forwarded channel (matching openssh behavior) so forwarding survives
++// agent restarts (e.g. 1password relock) and works independently of the
++// auth-time agent connection (which IdentitiesOnly disables)
++func setupAgentForwarding(client *ssh.Client, agentPath string) error {
++	testConn, err := dialIdentityAgent(agentPath)
++	if err != nil {
++		return err
++	}
++	testConn.Close()
++	channels := client.HandleChannelOpen("auth-agent@openssh.com")
++	if channels == nil {
++		return fmt.Errorf("agent forwarding already set up on this connection")
++	}
++	go func() {
++		defer func() {
++			panichandler.PanicHandler("sshclient:agent-forwarding", recover())
++		}()
++		for ch := range channels {
++			channel, reqs, err := ch.Accept()
++			if err != nil {
++				continue
++			}
++			go ssh.DiscardRequests(reqs)
++			go forwardAgentChannel(channel, agentPath)
++		}
++	}()
++	return nil
++}
++
++func forwardAgentChannel(channel ssh.Channel, agentPath string) {
++	defer func() {
++		panichandler.PanicHandler("sshclient:agent-forward-channel", recover())
++	}()
++	defer channel.Close()
++	agentConn, err := dialIdentityAgent(agentPath)
++	if err != nil {
++		log.Printf("agent forwarding: failed to dial agent %q: %v", agentPath, err)
++		return
++	}
++	defer agentConn.Close()
++	var wg sync.WaitGroup
++	wg.Add(2)
++	go func() {
++		defer wg.Done()
++		io.Copy(agentConn, channel)
++		// half-close so the agent sees EOF; windows pipes may not support it
++		if cw, ok := agentConn.(interface{ CloseWrite() error }); ok {
++			cw.CloseWrite()
++		} else {
++			agentConn.Close()
++		}
++	}()
++	go func() {
++		defer wg.Done()
++		io.Copy(channel, agentConn)
++		channel.CloseWrite()
++	}()
++	wg.Wait()
++}
++
+ func connectInternal(ctx context.Context, networkAddr string, clientConfig *ssh.ClientConfig, currentClient *ssh.Client) (*ssh.Client, error) {
+ 	var clientConn net.Conn
+ 	var err error
+@@ -868,7 +930,10 @@ func connectInternal(ctx context.Context, networkAddr string, clientConfig *ssh.
+ 	return ssh.NewClient(c, chans, reqs), nil
+ }
+ 
+-func ConnectToClient(connCtx context.Context, opts *SSHOpts, currentClient *ssh.Client, jumpNum int32, connFlags *wconfig.ConnKeywords) (*ssh.Client, int32, error) {
++// the returned bool indicates whether ssh agent forwarding was successfully
++// set up on the client; callers must still request forwarding per session
++// via agent.RequestAgentForwarding
++func ConnectToClient(connCtx context.Context, opts *SSHOpts, currentClient *ssh.Client, jumpNum int32, connFlags *wconfig.ConnKeywords) (*ssh.Client, bool, int32, error) {
+ 	blocklogger.Infof(connCtx, "[conndebug] ConnectToClient %s (jump:%d)...\n", opts.String(), jumpNum)
+ 	debugInfo := &ConnectionDebugInfo{
+ 		CurrentClient: currentClient,
+@@ -876,7 +941,7 @@ func ConnectToClient(connCtx context.Context, opts *SSHOpts, currentClient *ssh.
+ 		JumpNum:       jumpNum,
+ 	}
+ 	if jumpNum > SshProxyJumpMaxDepth {
+-		return nil, jumpNum, ConnectionError{ConnectionDebugInfo: debugInfo, Err: utilds.Errorf(ConnErrCode_ProxyDepth, "ProxyJump %d exceeds Wave's max depth of %d", jumpNum, SshProxyJumpMaxDepth)}
++		return nil, false, jumpNum, ConnectionError{ConnectionDebugInfo: debugInfo, Err: utilds.Errorf(ConnErrCode_ProxyDepth, "ProxyJump %d exceeds Wave's max depth of %d", jumpNum, SshProxyJumpMaxDepth)}
+ 	}
+ 
+ 	rawName := opts.String()
+@@ -892,14 +957,14 @@ func ConnectToClient(connCtx context.Context, opts *SSHOpts, currentClient *ssh.
+ 		sshConfigKeywords, err = findSshDefaults(opts.SSHHost)
+ 		if err != nil {
+ 			err = utilds.MakeCodedError(ConnErrCode_ConfigDefault, fmt.Errorf("cannot determine default config keywords: %w", err))
+-			return nil, debugInfo.JumpNum, ConnectionError{ConnectionDebugInfo: debugInfo, Err: err}
++			return nil, false, debugInfo.JumpNum, ConnectionError{ConnectionDebugInfo: debugInfo, Err: err}
+ 		}
+ 	} else {
+ 		var err error
+ 		sshConfigKeywords, err = findSshConfigKeywords(opts.SSHHost)
+ 		if err != nil {
+ 			err = utilds.MakeCodedError(ConnErrCode_ConfigParse, fmt.Errorf("cannot determine config keywords: %w", err))
+-			return nil, debugInfo.JumpNum, ConnectionError{ConnectionDebugInfo: debugInfo, Err: err}
++			return nil, false, debugInfo.JumpNum, ConnectionError{ConnectionDebugInfo: debugInfo, Err: err}
+ 		}
+ 	}
+ 
+@@ -930,7 +995,7 @@ func ConnectToClient(connCtx context.Context, opts *SSHOpts, currentClient *ssh.
+ 	for _, proxyName := range sshKeywords.SshProxyJump {
+ 		proxyOpts, err := ParseOpts(proxyName)
+ 		if err != nil {
+-			return nil, debugInfo.JumpNum, ConnectionError{ConnectionDebugInfo: debugInfo, Err: utilds.MakeCodedError(ConnErrCode_ProxyParse, err)}
++			return nil, false, debugInfo.JumpNum, ConnectionError{ConnectionDebugInfo: debugInfo, Err: utilds.MakeCodedError(ConnErrCode_ProxyParse, err)}
+ 		}
+ 
+ 		// ensure no overflow (this will likely never happen)
+@@ -939,23 +1004,36 @@ func ConnectToClient(connCtx context.Context, opts *SSHOpts, currentClient *ssh.
+ 		}
+ 
+ 		// do not apply supplied keywords to proxies - ssh config must be used for that
+-		debugInfo.CurrentClient, jumpNum, err = ConnectToClient(connCtx, proxyOpts, debugInfo.CurrentClient, jumpNum, &wconfig.ConnKeywords{})
++		// agent forwarding is only set up on the final hop, so the proxy's forwarding flag is ignored
++		debugInfo.CurrentClient, _, jumpNum, err = ConnectToClient(connCtx, proxyOpts, debugInfo.CurrentClient, jumpNum, &wconfig.ConnKeywords{})
+ 		if err != nil {
+ 			// do not add a context on a recursive call
+ 			// (this can cause a recursive nested context that's arbitrarily deep)
+-			return nil, jumpNum, err
++			return nil, false, jumpNum, err
+ 		}
+ 	}
+ 	clientConfig, err := createClientConfig(connCtx, sshKeywords, debugInfo)
+ 	if err != nil {
+-		return nil, debugInfo.JumpNum, ConnectionError{ConnectionDebugInfo: debugInfo, Err: err}
++		return nil, false, debugInfo.JumpNum, ConnectionError{ConnectionDebugInfo: debugInfo, Err: err}
+ 	}
+ 	networkAddr := utilfn.SafeDeref(sshKeywords.SshHostName) + ":" + utilfn.SafeDeref(sshKeywords.SshPort)
+ 	client, err := connectInternal(connCtx, networkAddr, clientConfig, debugInfo.CurrentClient)
+ 	if err != nil {
+-		return client, debugInfo.JumpNum, ConnectionError{ConnectionDebugInfo: debugInfo, Err: err}
++		return client, false, debugInfo.JumpNum, ConnectionError{ConnectionDebugInfo: debugInfo, Err: err}
++	}
++	forwardAgent := false
++	if utilfn.SafeDeref(sshKeywords.SshForwardAgent) {
++		agentPath := strings.TrimSpace(utilfn.SafeDeref(sshKeywords.SshIdentityAgent))
++		if agentPath == "" {
++			blocklogger.Infof(connCtx, "[conndebug] ForwardAgent requested but no ssh agent socket found, skipping\n")
++		} else if err := setupAgentForwarding(client, agentPath); err != nil {
++			blocklogger.Infof(connCtx, "[conndebug] error setting up agent forwarding: %v\n", err)
++		} else {
++			blocklogger.Infof(connCtx, "[conndebug] ssh agent forwarding enabled\n")
++			forwardAgent = true
++		}
+ 	}
+-	return client, debugInfo.JumpNum, nil
++	return client, forwardAgent, debugInfo.JumpNum, nil
+ }
+ 
+ // note that a `var == "yes"` will default to false
+@@ -1048,6 +1126,12 @@ func findSshConfigKeywords(hostPattern string) (connKeywords *wconfig.ConnKeywor
+ 	}
+ 	sshKeywords.SshAddKeysToAgent = utilfn.Ptr(strings.ToLower(trimquotes.TryTrimQuotes(addKeysToAgentRaw)) == "yes")
+ 
++	forwardAgentRaw, err := WaveSshConfigUserSettings().GetStrict(hostPattern, "ForwardAgent")
++	if err != nil {
++		return nil, err
++	}
++	sshKeywords.SshForwardAgent = utilfn.Ptr(strings.ToLower(trimquotes.TryTrimQuotes(forwardAgentRaw)) == "yes")
++
+ 	identitiesOnly, err := WaveSshConfigUserSettings().GetStrict(hostPattern, "IdentitiesOnly")
+ 	if err != nil {
+ 		return nil, err
+@@ -1125,6 +1209,7 @@ func findSshDefaults(hostPattern string) (connKeywords *wconfig.ConnKeywords, ou
+ 	sshKeywords.SshKbdInteractiveAuthentication = utilfn.Ptr(true)
+ 	sshKeywords.SshPreferredAuthentications = strings.Split(ssh_config.Default("PreferredAuthentications"), ",")
+ 	sshKeywords.SshAddKeysToAgent = utilfn.Ptr(false)
++	sshKeywords.SshForwardAgent = utilfn.Ptr(false)
+ 	sshKeywords.SshIdentitiesOnly = utilfn.Ptr(false)
+ 	sshKeywords.SshIdentityAgent = utilfn.Ptr(ssh_config.Default("IdentityAgent"))
+ 	sshKeywords.SshProxyJump = []string{}
+@@ -1191,6 +1276,9 @@ func mergeKeywords(oldKeywords *wconfig.ConnKeywords, newKeywords *wconfig.ConnK
+ 	if newKeywords.SshIdentityAgent != nil {
+ 		outKeywords.SshIdentityAgent = newKeywords.SshIdentityAgent
+ 	}
++	if newKeywords.SshForwardAgent != nil {
++		outKeywords.SshForwardAgent = newKeywords.SshForwardAgent
++	}
+ 	if newKeywords.SshIdentitiesOnly != nil {
+ 		outKeywords.SshIdentitiesOnly = newKeywords.SshIdentitiesOnly
+ 	}
+diff --git a/pkg/shellexec/shellexec.go b/pkg/shellexec/shellexec.go
+index 35af5446..77538f9f 100644
+--- a/pkg/shellexec/shellexec.go
++++ b/pkg/shellexec/shellexec.go
+@@ -32,6 +32,8 @@ import (
+ 	"github.com/wavetermdev/waveterm/pkg/wshrpc/wshclient"
+ 	"github.com/wavetermdev/waveterm/pkg/wshutil"
+ 	"github.com/wavetermdev/waveterm/pkg/wslconn"
++	"golang.org/x/crypto/ssh"
++	"golang.org/x/crypto/ssh/agent"
+ )
+ 
+ const DefaultGracefulKillWait = 400 * time.Millisecond
+@@ -291,6 +293,16 @@ func StartWslShellProc(ctx context.Context, termSize waveobj.TermSize, cmdStr st
+ 	return &ShellProc{Cmd: cmdWrap, ConnName: conn.GetName(), CloseOnce: &sync.Once{}, DoneCh: make(chan any)}, nil
+ }
+ 
++// forwarding failures are non-fatal; the shell still starts, just without the agent socket
++func requestAgentForwardingIfEnabled(ctx context.Context, conn *conncontroller.SSHConn, session *ssh.Session) {
++	if !conn.GetForwardAgent() {
++		return
++	}
++	if err := agent.RequestAgentForwarding(session); err != nil {
++		conn.Infof(ctx, "error requesting agent forwarding: %v\n", err)
++	}
++}
++
+ func StartRemoteShellProcNoWsh(ctx context.Context, termSize waveobj.TermSize, cmdStr string, cmdOpts CommandOptsType, conn *conncontroller.SSHConn) (*ShellProc, error) {
+ 	client := conn.GetClient()
+ 	conn.Infof(ctx, "SSH-NEWSESSION (StartRemoteShellProcNoWsh)")
+@@ -325,6 +337,7 @@ func StartRemoteShellProcNoWsh(ctx context.Context, termSize waveobj.TermSize, c
+ 	session.Stderr = remoteStdoutWrite
+ 
+ 	session.RequestPty("xterm-256color", termSize.Rows, termSize.Cols, nil)
++	requestAgentForwardingIfEnabled(ctx, conn, session)
+ 	sessionWrap := MakeSessionWrap(session, "", pipePty)
+ 	err = session.Shell()
+ 	if err != nil {
+@@ -460,6 +473,7 @@ func StartRemoteShellProc(ctx context.Context, logCtx context.Context, termSize
+ 	}
+ 	shellutil.AddTokenSwapEntry(cmdOpts.SwapToken)
+ 	session.RequestPty("xterm-256color", termSize.Rows, termSize.Cols, nil)
++	requestAgentForwardingIfEnabled(logCtx, conn, session)
+ 	sessionWrap := MakeSessionWrap(session, cmdCombined, pipePty)
+ 	err = sessionWrap.Start()
+ 	if err != nil {
+diff --git a/pkg/wconfig/settingsconfig.go b/pkg/wconfig/settingsconfig.go
+index 67118b16..44d63255 100644
+--- a/pkg/wconfig/settingsconfig.go
++++ b/pkg/wconfig/settingsconfig.go
+@@ -417,6 +417,7 @@ type ConnKeywords struct {
+ 	SshPreferredAuthentications     []string `json:"ssh:preferredauthentications,omitempty"`
+ 	SshAddKeysToAgent               *bool    `json:"ssh:addkeystoagent,omitempty"`
+ 	SshIdentityAgent                *string  `json:"ssh:identityagent,omitempty"`
++	SshForwardAgent                 *bool    `json:"ssh:forwardagent,omitempty"`
+ 	SshIdentitiesOnly               *bool    `json:"ssh:identitiesonly,omitempty"`
+ 	SshProxyJump                    []string `json:"ssh:proxyjump,omitempty"`
+ 	SshUserKnownHostsFile           []string `json:"ssh:userknownhostsfile,omitempty"`
+diff --git a/schema/connections.json b/schema/connections.json
+index 3cb33b5d..1fbc1e87 100644
+--- a/schema/connections.json
++++ b/schema/connections.json
+@@ -105,6 +105,9 @@
+         "ssh:identityagent": {
+           "type": "string"
+         },
++        "ssh:forwardagent": {
++          "type": "boolean"
++        },
+         "ssh:identitiesonly": {
+           "type": "boolean"
+         },
