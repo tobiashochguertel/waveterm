@@ -3,7 +3,7 @@
 Catalog of open pull requests from [wavetermdev/waveterm](https://github.com/wavetermdev/waveterm/pulls)
 evaluated for integration into the fork via the `.patch` strategy.
 
-**Last updated:** 2026-08-22
+**Last updated:** 2026-08-23
 **Total open PRs:** 104
 
 ## Legend
@@ -19,9 +19,13 @@ evaluated for integration into the fork via the `.patch` strategy.
 
 | PR | Title | Size | Files | Branch | Patch file |
 |----|----|----|----|----|----|
+| [#2840](https://github.com/wavetermdev/waveterm/pull/2840) | Show Caps Lock indicator in SSH password prompt | +25/-4 | `frontend/app/modals/userinputmodal.tsx` | `dev.patch` | `008-ssh-capslock-indicator.patch` |
+| [#3401](https://github.com/wavetermdev/waveterm/pull/3401) | fix(ssh): wrap agent signers to continue to next identity on signing failure | +87/-1 | `pkg/remote/sshclient.go`, `pkg/remote/sshsigners.go` | `dev.patch` | `007-ssh-agent-signer-failover.patch` |
 | [#3420](https://github.com/wavetermdev/waveterm/pull/3420) | Fix bookmark typeahead not rendering suggestions | +4/-4 | `frontend/app/view/webview/webview.tsx` | `dev.patch` | `002-bookmark-typeahead-fix.patch` |
+| [#3421](https://github.com/wavetermdev/waveterm/pull/3421) | add ssh agent forwarding support (ForwardAgent / ssh:forwardagent) | +128/-11 | `docs/docs/connections.mdx`, `frontend/types/gotypes.d.ts`, … _+5 more_ | `dev.patch` | `005-ssh-agent-forwarding.patch` |
 | [#3429](https://github.com/wavetermdev/waveterm/pull/3429) | fix: stop a de-focusing block from re-grabbing focus | +6/-2 | `frontend/app/block/block.tsx` | `dev.patch` | `003-focus-fix.patch` |
 | [#3443](https://github.com/wavetermdev/waveterm/pull/3443) | File explorer bookmarks (folder / file / document-position) | +867/-200 | `frontend/app/element/markdown-anchor.test.ts`, `frontend/app/element/markdown-anchor.ts`, … _+20 more_ | `dev.patch` | `004-file-explorer-bookmarks.patch` |
+| [#3460](https://github.com/wavetermdev/waveterm/pull/3460) | fix: recover durable SSH sessions stuck falsely-attached after stream timeout | +250/-6 | `cmd/test-streammanager/main-test-streammanager.go`, `pkg/jobcontroller/jobcontroller.go`, … _+4 more_ | `dev.patch` | `006-ssh-durable-session-recovery.patch` |
 
 ### Tier 1 — Zero risk (pure bugfixes, tiny, single-file)
 
@@ -42,9 +46,6 @@ evaluated for integration into the fork via the `.patch` strategy.
 | [#3278](https://github.com/wavetermdev/waveterm/pull/3278) | fix(UI)): ensure terminal theme application via xterm theme setter | +10/-2 | `frontend/app/view/term/termtheme.ts`, `frontend/app/view/term/termwrap.ts` | Low | Great |
 | [#2856](https://github.com/wavetermdev/waveterm/pull/2856) | fix: file browser shows newest files first, bump limit to 5000 | +13/-1 | `pkg/wshrpc/wshremote/wshremote_file.go`, `pkg/wshrpc/wshrpctypes_const.go` | Low | Great |
 | [#2101](https://github.com/wavetermdev/waveterm/pull/2101) | fix: add WebSocket polyfill for Electron main process | +10/-8 | `frontend/util/wsutil.ts` | Low | Great |
-| [#3402](https://github.com/wavetermdev/waveterm/pull/3402) | fix(shellexec): avoid false Snap detection and empty XDG_* vars | +18/-1 | `pkg/shellexec/shellexec.go` | Low | Great |
-| [#2840](https://github.com/wavetermdev/waveterm/pull/2840) | Show Caps Lock indicator in SSH password prompt | +25/-4 | `frontend/app/modals/userinputmodal.tsx` | Low | Great |
-| [#3182](https://github.com/wavetermdev/waveterm/pull/3182) | properly set argv0 when spawning a process | +31/-0 | `pkg/shellexec/shellexec.go` | Low | Great |
 | [#2770](https://github.com/wavetermdev/waveterm/pull/2770) | fix: prevent terminal history duplication on restart | +28/-3 | `frontend/app/view/term/termwrap.ts` | Low | Great |
 | [#3264](https://github.com/wavetermdev/waveterm/pull/3264) | fix: serialize IME composition with subsequent keystrokes (#3164) | +39/-2 | `frontend/app/view/term/term-model.ts`, `frontend/app/view/term/termwrap.ts` | Low | Great |
 | [#2681](https://github.com/wavetermdev/waveterm/pull/2681) | New tabs inherit working directory from active tab | +36/-6 | `pkg/wcore/workspace.go` | Low | Great |
@@ -61,9 +62,11 @@ evaluated for integration into the fork via the `.patch` strategy.
 | [#2461](https://github.com/wavetermdev/waveterm/pull/2461) | Fix/terminal background color detection | +7/-3 | `frontend/app/view/codeeditor/codeeditor.tsx`, `frontend/app/view/preview/preview-edit.tsx`, … _+1 more_ | Medium | Caution — overlaps existing patch |
 | [#3407](https://github.com/wavetermdev/waveterm/pull/3407) | Preserve all windows/workspaces on close, not just the last one | +12/-1 | `docs/docs/config.mdx`, `emain/emain-window.ts`, … _+5 more_ | Medium | Caution — overlaps existing patch |
 | [#3457](https://github.com/wavetermdev/waveterm/pull/3457) | feat(config): add macOS vibrancy state setting | +17/-0 | `docs/docs/config.mdx`, `emain/emain-window.ts`, … _+4 more_ | Medium | Caution — overlaps existing patch |
+| [#3402](https://github.com/wavetermdev/waveterm/pull/3402) | fix(shellexec): avoid false Snap detection and empty XDG_* vars | +18/-1 | `pkg/shellexec/shellexec.go` | Medium | Caution — overlaps existing patch |
 | [#2406](https://github.com/wavetermdev/waveterm/pull/2406) | wsh => wave | +18/-1 | `pkg/remote/connutil.go`, `pkg/util/shellutil/shellutil.go`, … _+2 more_ | Medium | Caution |
 | [#3308](https://github.com/wavetermdev/waveterm/pull/3308) | add Cmd+, shortcut to open Settings, Esc to close | +24/-0 | `docs/docs/keybindings.mdx`, `frontend/app/element/quicktips.tsx`, … _+1 more_ | Medium | Caution |
 | [#3358](https://github.com/wavetermdev/waveterm/pull/3358) | fix: support OAuth/SSO auth flows in webview blocks | +25/-0 | `emain/emain-tabview.ts`, `frontend/app/view/webview/webview.tsx` | Medium | Caution — overlaps existing patch |
+| [#3182](https://github.com/wavetermdev/waveterm/pull/3182) | properly set argv0 when spawning a process | +31/-0 | `pkg/shellexec/shellexec.go` | Medium | Caution — overlaps existing patch |
 | [#3440](https://github.com/wavetermdev/waveterm/pull/3440) | add preview:openfileinnewblock setting to open files in a new block from directory preview | +36/-6 | `docs/docs/config.mdx`, `frontend/app/view/preview/preview-directory.tsx`, … _+5 more_ | Medium | Caution — overlaps existing patch |
 | [#3117](https://github.com/wavetermdev/waveterm/pull/3117) | feat: add tab:newtablayout setting for custom new tab layouts | +42/-1 | `pkg/wconfig/settingsconfig.go`, `pkg/wcore/workspace.go`, … _+1 more_ | Medium | Caution — overlaps existing patch |
 | [#2858](https://github.com/wavetermdev/waveterm/pull/2858) | fix: terminal scroll preservation on tab switch and alt buffer exit | +40/-4 | `emain/emain-window.ts`, `frontend/app/view/term/osc-handlers.ts`, … _+1 more_ | Medium | Caution |
@@ -73,14 +76,11 @@ evaluated for integration into the fork via the `.patch` strategy.
 | [#3058](https://github.com/wavetermdev/waveterm/pull/3058) | feat: close window when last terminal exits (term:closeonlasttermclose) | +56/-2 | `frontend/types/gotypes.d.ts`, `pkg/blockcontroller/shellcontroller.go`, … _+3 more_ | Medium | Caution — overlaps existing patch |
 | [#2245](https://github.com/wavetermdev/waveterm/pull/2245) | Fix WebSocket utilities and Add OSC 52 clipboard support | +60/-6 | `frontend/app/view/term/termwrap.ts`, `frontend/util/wsutil.ts` | Medium | Caution |
 | [#2717](https://github.com/wavetermdev/waveterm/pull/2717) | Fix terminal state loss when switching workspaces | +57/-10 | `emain/emain-window.ts` | Medium | Caution |
-| [#3401](https://github.com/wavetermdev/waveterm/pull/3401) | fix(ssh): wrap agent signers to continue to next identity on signing failure | +87/-1 | `pkg/remote/sshclient.go`, `pkg/remote/sshsigners.go` | Medium | Caution |
 | [#2742](https://github.com/wavetermdev/waveterm/pull/2742) | Add drag-and-drop file support to terminal | +101/-3 | `emain/preload.ts`, `frontend/app/view/term/term.tsx`, … _+3 more_ | Medium | Caution — overlaps existing patch |
 | [#3016](https://github.com/wavetermdev/waveterm/pull/3016) | feat: implement per-block zsh history isolation | +97/-26 | `pkg/util/shellutil/shellintegration/zsh_zshrc.sh`, `pkg/util/shellutil/shellutil.go`, … _+1 more_ | Medium | Caution |
-| [#3421](https://github.com/wavetermdev/waveterm/pull/3421) | add ssh agent forwarding support (ForwardAgent / ssh:forwardagent) | +128/-11 | `docs/docs/connections.mdx`, `frontend/types/gotypes.d.ts`, … _+5 more_ | Medium | Caution — overlaps existing patch |
 | [#2859](https://github.com/wavetermdev/waveterm/pull/2859) | feat: cmd+click to open file paths in terminal | +160/-0 | `frontend/app/view/term/term-link-provider.ts`, `frontend/app/view/term/termwrap.ts` | Medium | Caution |
 | [#3290](https://github.com/wavetermdev/waveterm/pull/3290) | fix: preserve reasoning_content for DeepSeek chat completions | +212/-24 | `pkg/aiusechat/openaichat/openaichat-backend.go`, `pkg/aiusechat/openaichat/openaichat-backend_test.go`, … _+1 more_ | Medium | Caution |
-| [#3460](https://github.com/wavetermdev/waveterm/pull/3460) | fix: recover durable SSH sessions stuck falsely-attached after stream timeout (#3439) | +250/-6 | `cmd/test-streammanager/main-test-streammanager.go`, `pkg/jobcontroller/jobcontroller.go`, … _+4 more_ | Medium | Caution |
-| [#3152](https://github.com/wavetermdev/waveterm/pull/3152) | fix: prevent "no route for conn:..." errors and add shell path expansion | +354/-0 | `pkg/remote/conncontroller/conncontroller.go`, `pkg/shellexec/shellexec.go`, … _+1 more_ | Medium | Caution |
+| [#3152](https://github.com/wavetermdev/waveterm/pull/3152) | fix: prevent "no route for conn:..." errors and add shell path expansion | +354/-0 | `pkg/remote/conncontroller/conncontroller.go`, `pkg/shellexec/shellexec.go`, … _+1 more_ | Medium | Caution — overlaps existing patch |
 | [#3066](https://github.com/wavetermdev/waveterm/pull/3066) | Add standalone file suggestion preview and fix PreviewEnv service narrowing | +401/-38 | `frontend/app/suggestion/suggestion.tsx`, `frontend/app/view/preview/preview.tsx`, … _+5 more_ | Medium | Caution |
 
 ### Tier 4 — High risk (large, multi-file, features)
@@ -187,7 +187,7 @@ Files that appear in multiple PRs — integrating one may complicate integrating
 | `frontend/app/view/term/osc-handlers.ts` | [#2858](https://github.com/wavetermdev/waveterm/pull/2858), [#3004](https://github.com/wavetermdev/waveterm/pull/3004), [#3205](https://github.com/wavetermdev/waveterm/pull/3205), [#3275](https://github.com/wavetermdev/waveterm/pull/3275), [#3399](https://github.com/wavetermdev/waveterm/pull/3399) |
 | `frontend/types/custom.d.ts` | [#2742](https://github.com/wavetermdev/waveterm/pull/2742), [#2763](https://github.com/wavetermdev/waveterm/pull/2763), [#2789](https://github.com/wavetermdev/waveterm/pull/2789), [#3205](https://github.com/wavetermdev/waveterm/pull/3205), [#3220](https://github.com/wavetermdev/waveterm/pull/3220) |
 | `pkg/blockcontroller/shellcontroller.go` | [#2763](https://github.com/wavetermdev/waveterm/pull/2763), [#2835](https://github.com/wavetermdev/waveterm/pull/2835), [#2940](https://github.com/wavetermdev/waveterm/pull/2940), [#3058](https://github.com/wavetermdev/waveterm/pull/3058), [#3275](https://github.com/wavetermdev/waveterm/pull/3275) |
-| `pkg/shellexec/shellexec.go` | [#2940](https://github.com/wavetermdev/waveterm/pull/2940), [#3152](https://github.com/wavetermdev/waveterm/pull/3152), [#3182](https://github.com/wavetermdev/waveterm/pull/3182), [#3402](https://github.com/wavetermdev/waveterm/pull/3402), [#3421](https://github.com/wavetermdev/waveterm/pull/3421) |
+| `pkg/shellexec/shellexec.go` **(patched)** | [#2940](https://github.com/wavetermdev/waveterm/pull/2940), [#3152](https://github.com/wavetermdev/waveterm/pull/3152), [#3182](https://github.com/wavetermdev/waveterm/pull/3182), [#3402](https://github.com/wavetermdev/waveterm/pull/3402), [#3421](https://github.com/wavetermdev/waveterm/pull/3421) |
 | `pkg/wconfig/defaultconfig/settings.json` | [#2835](https://github.com/wavetermdev/waveterm/pull/2835), [#3220](https://github.com/wavetermdev/waveterm/pull/3220), [#3293](https://github.com/wavetermdev/waveterm/pull/3293), [#3331](https://github.com/wavetermdev/waveterm/pull/3331), [#3407](https://github.com/wavetermdev/waveterm/pull/3407) |
 | `.gitignore` | [#3220](https://github.com/wavetermdev/waveterm/pull/3220), [#3235](https://github.com/wavetermdev/waveterm/pull/3235), [#3275](https://github.com/wavetermdev/waveterm/pull/3275), [#3479](https://github.com/wavetermdev/waveterm/pull/3479) |
 | `emain/preload.ts` | [#2742](https://github.com/wavetermdev/waveterm/pull/2742), [#2763](https://github.com/wavetermdev/waveterm/pull/2763), [#2789](https://github.com/wavetermdev/waveterm/pull/2789), [#3220](https://github.com/wavetermdev/waveterm/pull/3220) |
@@ -217,7 +217,7 @@ Files that appear in multiple PRs — integrating one may complicate integrating
 | `frontend/tailwindsetup.css` | [#3220](https://github.com/wavetermdev/waveterm/pull/3220), [#3293](https://github.com/wavetermdev/waveterm/pull/3293), [#3312](https://github.com/wavetermdev/waveterm/pull/3312) |
 | `frontend/types/waveevent.d.ts` | [#3275](https://github.com/wavetermdev/waveterm/pull/3275), [#3293](https://github.com/wavetermdev/waveterm/pull/3293), [#3479](https://github.com/wavetermdev/waveterm/pull/3479) |
 | `frontend/wave.ts` | [#2789](https://github.com/wavetermdev/waveterm/pull/2789), [#3220](https://github.com/wavetermdev/waveterm/pull/3220), [#3480](https://github.com/wavetermdev/waveterm/pull/3480) |
-| `pkg/remote/conncontroller/conncontroller.go` | [#3152](https://github.com/wavetermdev/waveterm/pull/3152), [#3220](https://github.com/wavetermdev/waveterm/pull/3220), [#3421](https://github.com/wavetermdev/waveterm/pull/3421) |
+| `pkg/remote/conncontroller/conncontroller.go` **(patched)** | [#3152](https://github.com/wavetermdev/waveterm/pull/3152), [#3220](https://github.com/wavetermdev/waveterm/pull/3220), [#3421](https://github.com/wavetermdev/waveterm/pull/3421) |
 | `pkg/tsgen/tsgenevent.go` | [#3275](https://github.com/wavetermdev/waveterm/pull/3275), [#3293](https://github.com/wavetermdev/waveterm/pull/3293), [#3479](https://github.com/wavetermdev/waveterm/pull/3479) |
 | `pkg/waveobj/objrtinfo.go` | [#3004](https://github.com/wavetermdev/waveterm/pull/3004), [#3086](https://github.com/wavetermdev/waveterm/pull/3086), [#3293](https://github.com/wavetermdev/waveterm/pull/3293) |
 | `pkg/wps/wpstypes.go` | [#3275](https://github.com/wavetermdev/waveterm/pull/3275), [#3293](https://github.com/wavetermdev/waveterm/pull/3293), [#3479](https://github.com/wavetermdev/waveterm/pull/3479) |
@@ -243,7 +243,7 @@ Files that appear in multiple PRs — integrating one may complicate integrating
 | `frontend/util/wsutil.ts` | [#2101](https://github.com/wavetermdev/waveterm/pull/2101), [#2245](https://github.com/wavetermdev/waveterm/pull/2245) |
 | `pkg/aiusechat/openaichat/openaichat-backend.go` | [#3290](https://github.com/wavetermdev/waveterm/pull/3290), [#3476](https://github.com/wavetermdev/waveterm/pull/3476) |
 | `pkg/aiusechat/openaichat/openaichat-types.go` | [#3290](https://github.com/wavetermdev/waveterm/pull/3290), [#3476](https://github.com/wavetermdev/waveterm/pull/3476) |
-| `pkg/remote/sshclient.go` | [#3401](https://github.com/wavetermdev/waveterm/pull/3401), [#3421](https://github.com/wavetermdev/waveterm/pull/3421) |
+| `pkg/remote/sshclient.go` **(patched)** | [#3401](https://github.com/wavetermdev/waveterm/pull/3401), [#3421](https://github.com/wavetermdev/waveterm/pull/3421) |
 | `pkg/service/workspaceservice/workspaceservice.go` | [#2763](https://github.com/wavetermdev/waveterm/pull/2763), [#3353](https://github.com/wavetermdev/waveterm/pull/3353) |
 | `pkg/util/shellutil/shellintegration/zsh_zshrc.sh` | [#3004](https://github.com/wavetermdev/waveterm/pull/3004), [#3016](https://github.com/wavetermdev/waveterm/pull/3016) |
 | `pkg/util/shellutil/shellutil.go` | [#2406](https://github.com/wavetermdev/waveterm/pull/2406), [#3016](https://github.com/wavetermdev/waveterm/pull/3016) |
