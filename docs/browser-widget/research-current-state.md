@@ -378,17 +378,385 @@ non-Electron browser engine inside an Electron app. This makes sense:
 3. No benefit since Electron's Chromium is already full-featured
 4. If you want a different engine, use a different framework (Tauri, CEF, etc.)
 
+### G. Remote browser streaming (WebSocket / WebRTC)
+
+This approach decouples the browser from the Electron process entirely.
+A browser runs on a server (or locally in a background process), its
+framebuffer is captured and encoded as a video stream, and the stream is
+sent to the client over WebSocket or WebRTC. The client renders the stream
+in a `<canvas>` or `<video>` element and forwards mouse/keyboard input back.
+
+This is the same pattern used by cloud gaming services (GeForce NOW, Google
+Stadia), remote desktop tools (noVNC, Apache Guacamole), and browser
+isolation platforms (Kasm, Hyperbeam).
+
+#### Architecture
+
+**Model A: Local streaming (browser runs on the same machine)**
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  WaveTerm (Electron)                                    │
+│                                                         │
+│  ┌───────────────────────────────────────────────────┐  │
+│  │  React Renderer                                   │  │
+│  │  BrowserWidget (new block type)                   │  │
+│  │  ├── URL bar, nav, bookmarks, search              │  │
+│  │  ├── <canvas> — renders incoming video frames     │  │
+│  │  └── Input forwarder — mouse/keyboard → WebSocket │  │
+│  └───────────┬───────────────────────────────────────┘  │
+│              │ WebSocket (localhost)                     │
+│  ┌───────────▼───────────────────────────────────────┐  │
+│  │  Local streaming server (child process)           │  │
+│  │  (Neko / vbrowser / Selkies / custom)             │  │
+│  │  ├── Xvfb (virtual framebuffer)                   │  │
+│  │  ├── Chromium / Firefox                           │  │
+│  │  ├── Frame capture → H.264/VP8/JPEG encode        │  │
+│  │  ├── Input injection → xdotool / XTEST            │  │
+│  │  └── WebSocket server                             │  │
+│  └───────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────┘
+```
+
+- Latency: ~10-20ms (localhost loopback)
+- Works offline (no network dependency)
+- Still runs Chromium locally, but in an isolated process
+- Simplest deployment: WaveTerm spawns the streaming server as a child process
+
+**Model B: Remote streaming (browser runs on a server)**
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  WaveTerm (Electron, local machine)                     │
+│                                                         │
+│  ┌───────────────────────────────────────────────────┐  │
+│  │  React Renderer                                   │  │
+│  │  BrowserWidget (new block type)                   │  │
+│  │  ├── URL bar, nav, bookmarks, search              │  │
+│  │  ├── <canvas> or <video> — renders stream         │  │
+│  │  └── Input forwarder — mouse/keyboard → WS/WebRTC │  │
+│  └───────────┬───────────────────────────────────────┘  │
+│              │ WebSocket or WebRTC (network)             │
+└──────────────┼──────────────────────────────────────────┘
+               │
+               │ Network (LAN / VPN / Internet)
+               │
+┌──────────────▼──────────────────────────────────────────┐
+│  Remote browser server                                  │
+│                                                         │
+│  ┌───────────────────────────────────────────────────┐  │
+│  │  Container or VM                                  │  │
+│  │  ├── Xvfb (virtual framebuffer, e.g. 1920×1080)   │  │
+│  │  ├── Browser (Chromium / Firefox / etc.)          │  │
+│  │  ├── x11vnc or GStreamer (frame capture)          │  │
+│  │  ├── Encoder (H.264 / VP8 / VP9 / JPEG)           │  │
+│  │  ├── Input injection (xdotool / XTEST)            │  │
+│  │  └── Streaming server (Neko / vbrowser / Selkies) │  │
+│  └───────────────────────────────────────────────────┘  │
+│                                                         │
+│  Optional: Docker / Kubernetes orchestration            │
+│  Optional: GPU acceleration (NVENC / VA-API)            │
+│  Optional: Session persistence, multi-user sharing      │
+└─────────────────────────────────────────────────────────┘
+```
+
+- Latency: ~20-100ms (depends on network)
+- Requires network connectivity to the streaming server
+- Browser runs in an isolated container/VM (security boundary)
+- Can access networks not reachable from the local machine (VPN, restricted
+  networks, corporate intranet)
+- Multiple WaveTerm instances can share one browser session
+- Server can run any browser engine (Chromium, Firefox, Servo in the future)
+
+**Model C: Hybrid (configurable — local default, remote optional)**
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  WaveTerm (Electron)                                    │
+│                                                         │
+│  BrowserWidget config:                                  │
+│  {                                                      │
+│    "mode": "local" | "remote",                          │
+│    "remote": {                                          │
+│      "url": "wss://browser.example.com:8080",           │
+│      "auth": "token or password"                        │
+│    },                                                   │
+│    "local": {                                           │
+│      "engine": "chromium" | "firefox",                  │
+│      "resolution": "1920x1080",                         │
+│      "encoder": "h264" | "jpeg"                         │
+│    }                                                    │
+│  }                                                      │
+│                                                         │
+│  ┌─────────────┐       ┌─────────────────────────────┐  │
+│  │ Local mode  │       │ Remote mode                 │  │
+│  │             │       │                             │  │
+│  │ Spawn child │       │ Connect to remote server    │  │
+│  │ process     │       │ over WebSocket/WebRTC       │  │
+│  │ (vbrowser/  │       │ (Neko/Kasm/Selkies)         │  │
+│  │  Selkies)   │       │                             │  │
+│  └──────┬──────┘       └──────────┬──────────────────┘  │
+│         │                         │                      │
+└─────────┼─────────────────────────┼──────────────────────┘
+          │                         │
+          ▼                         ▼
+   Local browser              Remote browser
+   (child process)            (container/VM)
+```
+
+- Default to local mode (works offline, minimal latency)
+- User can configure remote server for specific use cases
+- Same client-side code handles both (just different WebSocket endpoints)
+- Most flexible approach
+
+#### Transport protocols
+
+**WebSocket**
+
+- Simpler setup (single TCP connection, no STUN/TURN needed)
+- Works through firewalls and proxies
+- Lower CPU overhead (no ICE negotiation)
+- Used by: Selkies (default), noVNC, Kasm
+- Latency: slightly higher than WebRTC (TCP vs UDP), but fine for interactive
+  use on localhost or LAN
+
+**WebRTC**
+
+- Lower latency (UDP transport, sub-frame encoding)
+- Built-in congestion control and adaptive bitrate
+- Requires STUN/TURN servers for NAT traversal (remote mode)
+- Used by: Neko, vbrowser, Hyperbeam, vscreen
+- Better for remote streaming over the internet
+
+**Recommendation:** WebSocket for local mode (simplicity), WebRTC for remote
+mode (latency). Selkies supports both, making it a good candidate for the
+hybrid approach.
+
+#### Encoding formats
+
+| Format | Latency | Quality | CPU/GPU | Bandwidth | Use case |
+|--------|---------|---------|---------|-----------|----------|
+| **H.264** | Low | High | HW accel (NVENC/VA-API) or SW (x264) | 2-5 Mbps @ 1080p | Default, best balance |
+| **VP8** | Low | Good | SW or HW | 3-8 Mbps @ 1080p | WebRTC default |
+| **VP9** | Medium | Excellent | SW or HW | 1-3 Mbps @ 1080p | Better compression, higher CPU |
+| **JPEG** | Very low | Medium (lossy) | Very low CPU | 5-20 Mbps @ 1080p | Fastest, lowest latency, high bandwidth |
+
+For local streaming: JPEG or H.264 (low CPU, localhost has bandwidth)
+For remote streaming: H.264 or VP8 (better compression for limited bandwidth)
+
+#### Existing projects
+
+| Project | Transport | Browser | Deployment | Embeddable | License |
+|---------|-----------|---------|------------|------------|---------|
+| **[Neko](https://github.com/m1k1o/neko)** | WebRTC | Chromium/Firefox in Docker | Docker container | iframe / Vue app | MIT |
+| **[vbrowser](https://github.com/zulfikawr/vbrowser)** | WebRTC + GStreamer | Chrome/Chromium/Firefox | Single Go binary | Web client | MIT |
+| **[Selkies](https://github.com/selkies-project/selkies)** | WebSocket (default) or WebRTC | Any X11 app | Python pip / Docker / k8s | HTML5 canvas (embeddable) | Apache 2.0 |
+| **[noVNC](https://github.com/novnc/noVNC)** | WebSocket | Any VNC server | JS library + websockify | iframe / JS library | MPL 2.0 |
+| **[Kasm Workspaces](https://kasm.com/)** | WebSocket | Chromium in container | Docker / k8s / enterprise | iframe via Developer API | Custom (free tier) |
+| **[Hyperbeam](https://www.hyperbeam.com/)** | WebRTC | Cloud-hosted Chromium | SaaS (no self-hosting) | `<div>` via JS SDK | Commercial |
+| **[vscreen](https://github.com/jameswebb68/vscreen)** | WebRTC | Headless Chromium + CDP | Node.js | `<video>` element | MIT |
+| **[phantom-browse](https://github.com/Presidentsu/phantom-browse)** | VNC (noVNC) + Socket.IO | Chromium + Xvfb | Docker container | noVNC iframe | MIT |
+
+#### Detailed project profiles
+
+**Neko** — [GitHub](https://github.com/m1k1o/neko) | [Docs](https://github.com/m1k1o/neko/tree/master/docs)
+
+Self-hosted virtual browser in Docker using WebRTC. The most popular
+open-source remote browser project. Runs Chromium or Firefox inside a Docker
+container with Xvfb, streams via WebRTC with VP8/H.264 encoding. Vue.js web
+client. Supports multiple users watching the same session (co-browsing).
+Battle-tested, active community.
+
+- **Best for:** Remote streaming with multi-user support
+- **Transport:** WebRTC (pion/webrtc in Go)
+- **Encoding:** VP8/H.264 via GStreamer
+- **Input:** Mouse, keyboard, clipboard via DataChannel
+- **Docker image:** `m1k1o/neko` (Chromium), `m1k1o/neko:firefox` (Firefox)
+- **Embedding:** Can be embedded via iframe or by integrating the Vue client
+
+**vbrowser** — [GitHub](https://github.com/zulfikawr/vbrowser)
+
+Single-binary Go application that streams Chrome, Chromium, or Firefox via
+WebRTC and GStreamer. The simplest deployment option — one binary, no Docker
+required. Ultra-low latency, 60 FPS streaming, hardware acceleration support.
+SSH tunnel or Cloudflare for secure access.
+
+- **Best for:** Local streaming (single binary, minimal setup)
+- **Transport:** WebRTC (pion/webrtc)
+- **Encoding:** VP8/H.264 via GStreamer, hardware acceleration
+- **Input:** Mouse, keyboard via xdotool
+- **Audio:** PulseAudio + Opus codec
+- **Deployment:** Single binary, no container needed
+
+**Selkies** — [GitHub](https://github.com/selkies-project/selkies) | [Docs](https://selkies-project.github.io/selkies/)
+
+Open-source low-latency accelerated remote desktop streaming platform.
+Started by Google engineers, now community-maintained. Streams over plain
+WebSockets by default (no STUN/TURN needed), with WebRTC as opt-in. Uses
+WebCodecs API on the client side for zero-copy rendering. Supports GPU
+acceleration (NVENC, VA-API). Runs as a Python pip package — no Docker
+required for local use.
+
+- **Best for:** Hybrid approach (supports both WebSocket and WebRTC)
+- **Transport:** WebSocket (default) or WebRTC (opt-in)
+- **Encoding:** H.264 (hardware or software), JPEG, OpenH264
+- **Client:** WebCodecs-based HTML5 (Chromium, Firefox, Safari)
+- **Input:** Keyboard, mouse, gamepad, clipboard (two-way text and images)
+- **Performance:** 60 FPS at Full HD, zero-copy rendering
+- **Embedding:** "Any HTML5 web interface you wish to embed inside"
+- **Deployment:** `pip install selkies` or Docker or Kubernetes
+
+**noVNC** — [GitHub](https://github.com/novnc/noVNC) | [Embedding docs](https://novnc.com/noVNC/docs/EMBEDDING.html)
+
+HTML5 VNC client library and application. The oldest and most widely deployed
+solution. Connects to any VNC server via WebSocket (using websockify as a
+proxy). Can be embedded via iframe or as a JavaScript library. Works with any
+VNC server (x11vnc, TigerVNC, QEMU, etc.).
+
+- **Best for:** Simple VNC-based streaming, maximum compatibility
+- **Transport:** WebSocket (via websockify proxy)
+- **Encoding:** VNC protocol ( Tight, H.264, Raw encodings)
+- **Input:** Mouse, keyboard via VNC protocol
+- **Embedding:** iframe (`vnc.html`) or JavaScript library (`RFB` class)
+- **Limitation:** VNC protocol adds overhead vs. direct video encoding
+- **Note:** iframe embedding requires HTTPS (mixed content blocking)
+
+**Kasm Workspaces** — [Website](https://kasm.com/) | [Developer API](https://kasm.com/developer-api) | [Docs](https://docs.kasm.com)
+
+Enterprise-grade container streaming platform. Streams containerized
+browsers, desktops, and applications to any modern browser. Free tier
+available, enterprise features for paid plans. Developer API allows
+creating and controlling streaming sessions programmatically. Built-in
+forward proxy with URL whitelisting/blacklisting.
+
+- **Best for:** Enterprise/production remote browser isolation
+- **Transport:** WebSocket (custom Guacamole-based connection proxy)
+- **Browser:** Chromium in disposable containers
+- **Features:** Session recording, multi-user, SAML SSO, GPU acceleration
+- **Embedding:** iframe via Developer API (`embed_url` from REST API)
+- **Deployment:** Docker, Kubernetes (Helm chart), or bare metal
+
+**Hyperbeam** — [Website](https://www.hyperbeam.com/) | [SDK docs](https://docs.hyperbeam.com/) | [npm](https://www.npmjs.com/package/@hyperbeam/web)
+
+Commercial cloud-hosted virtual browser API. No self-hosting — browsers run
+on Hyperbeam's infrastructure. JavaScript SDK (`@hyperbeam/web`) creates a
+virtual browser in a `<div>` element. Supports multiplayer (multiple users
+on same session), programmatic navigation, tab management, permissions.
+
+- **Best for:** Quick integration without infrastructure management
+- **Transport:** WebRTC
+- **Browser:** Cloud-hosted Chromium
+- **Embedding:** `Hyperbeam(container, embedURL, options)` → `<div>`
+- **Features:** Multiplayer cursors, programmatic tabs, volume control,
+  frame callbacks (ImageBitmap / HTMLVideoElement), audio track callbacks
+- **Cost:** Commercial (per-session pricing)
+- **Limitation:** Data goes through Hyperbeam's servers (privacy concern)
+
+**vscreen** — [GitHub](https://github.com/jameswebb68/vscreen)
+
+Turns headless Chromium into a remotely viewable, controllable virtual screen.
+Captures viewport via Chrome DevTools Protocol (CDP), encodes H.264/VP9 + Opus
+audio, streams over WebRTC. Includes 47 MCP automation tools for AI agents.
+Bidirectional input via DataChannel.
+
+- **Best for:** AI agent browser automation with live visualization
+- **Transport:** WebRTC
+- **Capture:** CDP screencast (not Xvfb — uses headless Chromium directly)
+- **Encoding:** H.264/VP9 video + Opus audio
+- **Input:** Mouse + keyboard via DataChannel → CDP dispatch
+- **Unique:** MCP tools for AI-driven page synthesis and automation
+
+**phantom-browse** — [GitHub](https://github.com/Presidentsu/phantom-browse)
+
+Security tool for isolating suspicious URL browsing in ephemeral Docker
+containers. Uses Xvfb + Chromium + x11vnc + noVNC for live streaming. Full
+network telemetry via CDP, VirusTotal integration, AI-powered threat analysis.
+
+- **Best for:** Security analysis of suspicious URLs
+- **Transport:** VNC (noVNC) + Socket.IO
+- **Browser:** Chromium in disposable Docker container
+- **Embedding:** noVNC iframe
+- **Unique:** Network capture, threat detection, download scanning
+
+#### Advantages over current `<webview>` approach
+
+1. **No Electron `<webview>` dependency** — completely removes the deprecated
+   tag and all its stability risks
+2. **Engine independence** — server can run Chromium, Firefox, or any browser;
+   not tied to Electron's bundled Chromium version
+3. **Security isolation** — browser runs in a separate process/container/VM,
+   not in the Electron process. Malicious pages can't access Electron's APIs
+4. **Remote browsing** — browser can run on a server with different network
+   access (VPN, restricted networks, corporate intranet, different geolocation)
+5. **Simpler client** — just a video decoder + input forwarder, no WebContents
+   API surface, no preload scripts, no IPC handlers
+6. **Multi-user / co-browsing** — multiple WaveTerm instances can share one
+   browser session (Neko, Hyperbeam support this natively)
+7. **Session persistence** — browser session can survive WaveTerm restart
+   (server keeps running, client reconnects)
+8. **Scalability** — offload browser rendering to a more powerful server or
+   GPU-equipped machine
+
+#### Tradeoffs
+
+1. **Requires a streaming server** — need to run Neko/vbrowser/Selkies
+   somewhere (localhost, remote host, or container)
+2. **Added latency** — network round-trip for every interaction
+   - Local: ~10-20ms (barely noticeable)
+   - Remote LAN: ~20-50ms (similar to remote desktop)
+   - Remote Internet: ~50-150ms (depends on distance and connection)
+3. **Bandwidth consumption** — video stream requires bandwidth
+   - H.264 at 1080p: ~2-5 Mbps
+   - JPEG at 1080p: ~5-20 Mbps
+   - VP9 at 1080p: ~1-3 Mbps
+4. **No offline use (remote mode)** — browser widget needs the streaming
+   server running and reachable
+5. **More moving parts** — Xvfb + browser + streaming server + WebSocket
+   connection (vs. a single `<webview>` tag)
+6. **Text rendering** — video encoding may produce slightly blurry text
+   compared to native rendering (especially at lower bitrates)
+7. **Input handling complexity** — need to map mouse/keyboard events to the
+   remote browser, handle focus, clipboard sync, scrolling
+8. **Audio** — need separate audio stream (Opus codec via WebRTC or
+   WebSocket), adds complexity
+
+#### Fit with WaveTerm's block system
+
+A streaming-based browser widget would be a **new block type** (e.g.,
+`"remotebrowser"` or `"streambrowser"`) rather than a modification of the
+existing `"web"` block. This allows:
+
+- Coexistence with the existing `<webview>`-based blocks (gradual migration)
+- Different block icon and settings
+- Configuration of streaming endpoint (local/remote, transport, encoder)
+- No changes to `WebViewModel`, `TsunamiViewModel`, or `HelpViewModel`
+
+The new block would register in `blockregistry.ts`:
+
+```typescript
+BlockRegistry.set("remotebrowser", RemoteBrowserViewModel);
+```
+
+And would need:
+- `RemoteBrowserViewModel` — manages URL, connection state, settings
+- `RemoteBrowserView` React component — renders `<canvas>`/`<video>`,
+  forwards input
+- WebSocket/WebRTC client — connects to streaming server
+- Optional: local streaming server launcher (spawns child process for
+  local mode)
+
 ---
 
 ## Summary comparison
 
-| Approach | Viable in Electron? | Production-ready? | Migration effort | Future-proof? |
-|----------|---------------------|-------------------|------------------|---------------|
-| **WebContentsView** | Yes (Electron 30+) | Yes | Large | Yes (official path) |
-| **CEF** | No (conflicts) | Yes | N/A | Yes |
-| **Playwright streaming** | Technically, but impractical | Yes | Very large | No (wrong tool) |
-| **Servo** | No (no embedding API) | No | N/A | Unknown |
-| **wry** | No (Electron alternative) | Yes | N/A | Yes |
+| Approach | Viable in Electron? | Production-ready? | Migration effort | Future-proof? | Offline? |
+|----------|---------------------|-------------------|------------------|---------------|----------|
+| **WebContentsView** | Yes (Electron 30+) | Yes | Large | Yes (official path) | Yes |
+| **CEF** | No (conflicts) | Yes | N/A | Yes | N/A |
+| **Playwright streaming** | Technically, but impractical | Yes | Very large | No (wrong tool) | Yes |
+| **Servo** | No (no embedding API) | No | N/A | Unknown | N/A |
+| **wry** | No (Electron alternative) | Yes | N/A | Yes | N/A |
+| **Remote browser streaming** | Yes (new block type) | Yes (multiple projects) | Medium (new block, no changes to existing) | Yes (engine-agnostic) | Local mode: yes, Remote: no |
 
 ---
 
@@ -420,6 +788,26 @@ non-Electron browser engine inside an Electron app. This makes sense:
 - [Servo embedding update](https://servo.org/blog/2024/01/19/embedding-update/) — Tauri integration PoC
 - [wry](https://github.com/tauri-apps/wry) — Tauri's webview wrapper
 - [webviewjs](https://github.com/webviewjs/webview) — JavaScript bindings for wry
+
+### Remote browser streaming
+- [Neko](https://github.com/m1k1o/neko) — Self-hosted virtual browser in Docker via WebRTC
+- [vbrowser](https://github.com/zulfikawr/vbrowser) — Single-binary Go WebRTC browser streamer
+- [Selkies](https://github.com/selkies-project/selkies) — WebSocket/WebRTC remote desktop streaming
+- [Selkies docs](https://selkies-project.github.io/selkies/) — Documentation and quick start
+- [Selkies web client](https://deepwiki.com/selkies-project/selkies/3.4-web-client) — Web client architecture
+- [noVNC](https://github.com/novnc/noVNC) — HTML5 VNC client library
+- [noVNC embedding docs](https://novnc.com/noVNC/docs/EMBEDDING.html) — How to embed noVNC
+- [websockify](https://github.com/novnc/websockify) — WebSocket to TCP proxy for VNC
+- [Kasm Workspaces](https://kasm.com/) — Container streaming platform
+- [Kasm Developer API](https://kasm.com/developer-api) — Programmatic session creation
+- [Kasm docs](https://docs.kasm.com/) — Documentation
+- [Kasm Helm chart](https://github.com/kasmtech/kasm-helm) — Kubernetes deployment
+- [Hyperbeam](https://www.hyperbeam.com/) — Cloud-hosted virtual browser API
+- [Hyperbeam SDK docs](https://docs.hyperbeam.com/) — JavaScript SDK documentation
+- [Hyperbeam getting started](https://docs.hyperbeam.com/home/getting-started) — Quick start guide
+- [@hyperbeam/web npm](https://www.npmjs.com/package/@hyperbeam/web) — NPM package
+- [vscreen](https://github.com/jameswebb68/vscreen) — Headless Chromium streaming with MCP tools
+- [phantom-browse](https://github.com/Presidentsu/phantom-browse) — Sandboxed browser for security analysis
 
 ### WaveTerm codebase
 - `frontend/app/view/webview/webview.tsx` — Main webview component (1135 lines)
