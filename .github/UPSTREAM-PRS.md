@@ -3,8 +3,8 @@
 Catalog of open pull requests from [wavetermdev/waveterm](https://github.com/wavetermdev/waveterm/pulls)
 evaluated for integration into the fork via the `.patch` strategy.
 
-**Last updated:** 2026-08-23
-**Total open PRs:** 104
+**Last updated:** 2026-08-24
+**Total open PRs:** 105
 
 ## Legend
 
@@ -119,6 +119,7 @@ evaluated for integration into the fork via the `.patch` strategy.
 
 | PR | Title | Size | Files |
 |----|----|----|----|
+| [#3482](https://github.com/wavetermdev/waveterm/pull/3482) | Add Build Remote Agent phone pairing (gbr/1) | +73/-0 | `docs/docs/gbr.mdx` |
 | [#3477](https://github.com/wavetermdev/waveterm/pull/3477) | docs: add MiniMax AI provider to Wave AI documentation | +55/-0 | `docs/docs/waveai-modes.mdx` |
 | [#3265](https://github.com/wavetermdev/waveterm/pull/3265) | docs: add Simplified Chinese README | +171/-3 | `README.ko.md`, `README.md`, … _+2 more_ |
 | [#3075](https://github.com/wavetermdev/waveterm/pull/3075) | feat: improve skill scores for waveterm | +36/-965 | `.kilocode/skills/add-config/SKILL.md`, `.kilocode/skills/add-rpc/SKILL.md`, … _+6 more_ |
