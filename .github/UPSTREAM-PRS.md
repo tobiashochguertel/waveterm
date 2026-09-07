@@ -3,8 +3,8 @@
 Catalog of open pull requests from [wavetermdev/waveterm](https://github.com/wavetermdev/waveterm/pulls)
 evaluated for integration into the fork via the `.patch` strategy.
 
-**Last updated:** 2026-08-31
-**Total open PRs:** 108
+**Last updated:** 2026-09-07
+**Total open PRs:** 114
 
 ## Legend
 
@@ -132,12 +132,18 @@ evaluated for integration into the fork via the `.patch` strategy.
 
 | PR | Title | Size |
 |----|----|----|
+| [#3494](https://github.com/wavetermdev/waveterm/pull/3494) | Bump fflate from 0.7.4 to 0.7.5 | +3/-572 |
+| [#3493](https://github.com/wavetermdev/waveterm/pull/3493) | Bump @humanfs/node from 0.16.7 to 0.16.8 | +21/-576 |
+| [#3492](https://github.com/wavetermdev/waveterm/pull/3492) | Bump @xmldom/xmldom from 0.8.13 to 0.8.15 | +3/-572 |
+| [#3491](https://github.com/wavetermdev/waveterm/pull/3491) | Bump fast-uri from 3.1.4 to 3.1.7 | +3/-572 |
+| [#3489](https://github.com/wavetermdev/waveterm/pull/3489) | Bump browserslist from 4.28.1 to 4.28.8 | +31/-594 |
+| [#3488](https://github.com/wavetermdev/waveterm/pull/3488) | Bump google.golang.org/grpc from 1.82.1 to 1.83.1 | +22/-22 |
+| [#3487](https://github.com/wavetermdev/waveterm/pull/3487) | Bump postcss-selector-parser | +48/-617 |
 | [#3474](https://github.com/wavetermdev/waveterm/pull/3474) | Bump js-yaml from 3.14.1 to 3.15.1 | +16/-6 |
 | [#3473](https://github.com/wavetermdev/waveterm/pull/3473) | Bump nanoid from 3.3.11 to 3.3.18 | +3/-3 |
 | [#3470](https://github.com/wavetermdev/waveterm/pull/3470) | Bump brace-expansion | +22/-22 |
 | [#3468](https://github.com/wavetermdev/waveterm/pull/3468) | Bump mermaid from 11.15.0 to 11.16.1 | +27/-27 |
 | [#3467](https://github.com/wavetermdev/waveterm/pull/3467) | Bump electron from 41.1.0 to 41.10.3 | +38/-159 |
-| [#3465](https://github.com/wavetermdev/waveterm/pull/3465) | Bump fast-uri from 3.1.4 to 3.1.5 | +3/-3 |
 | [#3461](https://github.com/wavetermdev/waveterm/pull/3461) | Bump ip-address from 10.2.0 to 10.4.0 | +3/-3 |
 | [#3454](https://github.com/wavetermdev/waveterm/pull/3454) | Bump postcss from 8.5.8 to 8.5.25 | +7/-7 |
 | [#3451](https://github.com/wavetermdev/waveterm/pull/3451) | Bump builder-util-runtime, electron-updater and electron-builder | +350/-923 |
