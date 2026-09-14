@@ -3,8 +3,8 @@
 Catalog of open pull requests from [wavetermdev/waveterm](https://github.com/wavetermdev/waveterm/pulls)
 evaluated for integration into the fork via the `.patch` strategy.
 
-**Last updated:** 2026-09-07
-**Total open PRs:** 114
+**Last updated:** 2026-09-14
+**Total open PRs:** 119
 
 ## Legend
 
@@ -34,7 +34,6 @@ evaluated for integration into the fork via the `.patch` strategy.
 | [#3413](https://github.com/wavetermdev/waveterm/pull/3413) | fix(webview): respect system color scheme for prefers-color-scheme in web blocks | +1/-1 | `emain/emain.ts` | Zero | Excellent |
 | [#3419](https://github.com/wavetermdev/waveterm/pull/3419) | fix(wsh): prevent deleteblock from silently ignoring positional arguments | +3/-1 | `cmd/wsh/cmd/wshcmd-deleteblock.go` | Zero | Excellent |
 | [#3455](https://github.com/wavetermdev/waveterm/pull/3455) | fix(web): add missing returns after http.Error in handlers | +5/-0 | `pkg/web/web.go` | Zero | Excellent |
-| [#3343](https://github.com/wavetermdev/waveterm/pull/3343) | feat(preview): sort directories before files in directory preview | +7/-1 | `frontend/app/view/preview/preview-directory.tsx` | Zero | Excellent |
 | [#3486](https://github.com/wavetermdev/waveterm/pull/3486) | Fix OSC 8 links opening in external browser | +8/-1 | `frontend/app/view/term/termwrap.ts` | Zero | Excellent |
 | [#3404](https://github.com/wavetermdev/waveterm/pull/3404) | wavebase: symlink ~/.config/waveterm for snap users | +9/-0 | `pkg/wavebase/wavebase.go` | Zero | Excellent |
 
@@ -76,6 +75,7 @@ evaluated for integration into the fork via the `.patch` strategy.
 | [#3280](https://github.com/wavetermdev/waveterm/pull/3280) | feat: support Windows right-click context menu to open directory | +52/-3 | `emain/emain-window.ts`, `emain/emain.ts`, … _+2 more_ | Medium | Caution |
 | [#2678](https://github.com/wavetermdev/waveterm/pull/2678) | Add confirmation dialog before closing tabs | +50/-5 | `frontend/app/modals/confirmclosetab.tsx`, `frontend/app/modals/modalregistry.tsx`, … _+2 more_ | Medium | Caution — overlaps existing patch |
 | [#3058](https://github.com/wavetermdev/waveterm/pull/3058) | feat: close window when last terminal exits (term:closeonlasttermclose) | +56/-2 | `frontend/types/gotypes.d.ts`, `pkg/blockcontroller/shellcontroller.go`, … _+3 more_ | Medium | Caution — overlaps existing patch |
+| [#3498](https://github.com/wavetermdev/waveterm/pull/3498) | Fix PowerShell encoding for Windows environment variable names | +61/-3 | `pkg/util/shellutil/tokenswap.go`, `pkg/util/shellutil/tokenswap_test.go` | Medium | Caution |
 | [#2245](https://github.com/wavetermdev/waveterm/pull/2245) | Fix WebSocket utilities and Add OSC 52 clipboard support | +60/-6 | `frontend/app/view/term/termwrap.ts`, `frontend/util/wsutil.ts` | Medium | Caution |
 | [#2717](https://github.com/wavetermdev/waveterm/pull/2717) | Fix terminal state loss when switching workspaces | +57/-10 | `emain/emain-window.ts` | Medium | Caution |
 | [#2742](https://github.com/wavetermdev/waveterm/pull/2742) | Add drag-and-drop file support to terminal | +101/-3 | `emain/preload.ts`, `frontend/app/view/term/term.tsx`, … _+3 more_ | Medium | Caution — overlaps existing patch |
@@ -106,6 +106,7 @@ evaluated for integration into the fork via the `.patch` strategy.
 | [#3184](https://github.com/wavetermdev/waveterm/pull/3184) | feat: add i18n framework with Chinese (zh-CN) localization | +369/-648 | `frontend/app/aipanel/aipanel-contextmenu.ts`, `frontend/app/aipanel/aipanelheader.tsx`, … _+12 more_ | High | Risky |
 | [#3293](https://github.com/wavetermdev/waveterm/pull/3293) | Notes widget (w/ syncing backend) | +1158/-12 | `docs/docs/config.mdx`, `frontend/app/block/blockregistry.ts`, … _+23 more_ | High | Risky |
 | [#3235](https://github.com/wavetermdev/waveterm/pull/3235) | Add block rename and preview follow terminal features | +647/-563 | `.gitignore`, `CLAUDE.md`, … _+12 more_ | High | Risky |
+| [#3507](https://github.com/wavetermdev/waveterm/pull/3507) | Feat/cross-vendor GPU metrics to sysinfo plots | +1189/-60 | `frontend/app/theme.scss`, `frontend/app/view/sysinfo/sysinfo.tsx`, … _+5 more_ | High | Risky |
 | [#2763](https://github.com/wavetermdev/waveterm/pull/2763) | add workspace directory feature with shell quoting and tests | +844/-613 | `emain/emain-ipc.ts`, `emain/preload.ts`, … _+16 more_ | High | Risky |
 | [#3263](https://github.com/wavetermdev/waveterm/pull/3263) | feat: tab templates and geolocation polyfill for webviews | +968/-593 | `db/migrations-wstore/000012_tabtemplate.down.sql`, `db/migrations-wstore/000012_tabtemplate.up.sql`, … _+17 more_ | High | Risky |
 | [#2940](https://github.com/wavetermdev/waveterm/pull/2940) | feat(term): add sixel rendering and propagate terminal pixel size to PTY | +1010/-598 | `frontend/app/view/term/term-model.ts`, `frontend/app/view/term/term.tsx`, … _+11 more_ | High | Risky |
@@ -132,6 +133,12 @@ evaluated for integration into the fork via the `.patch` strategy.
 
 | PR | Title | Size |
 |----|----|----|
+| [#3504](https://github.com/wavetermdev/waveterm/pull/3504) | Bump js-yaml from 3.14.1 to 3.15.2 | +16/-575 |
+| [#3503](https://github.com/wavetermdev/waveterm/pull/3503) | Bump joi from 17.13.3 to 17.13.7 | +3/-572 |
+| [#3502](https://github.com/wavetermdev/waveterm/pull/3502) | Bump baseline-browser-mapping from 2.9.11 to 2.11.21 | +7/-573 |
+| [#3500](https://github.com/wavetermdev/waveterm/pull/3500) | Bump @vitest/mocker, @vitest/coverage-istanbul and vitest | +651/-1200 |
+| [#3499](https://github.com/wavetermdev/waveterm/pull/3499) | Bump colord from 2.9.3 to 2.10.0 | +5/-574 |
+| [#3496](https://github.com/wavetermdev/waveterm/pull/3496) | Bump @ai-sdk/provider-utils, @ai-sdk/react and ai | +64/-611 |
 | [#3494](https://github.com/wavetermdev/waveterm/pull/3494) | Bump fflate from 0.7.4 to 0.7.5 | +3/-572 |
 | [#3493](https://github.com/wavetermdev/waveterm/pull/3493) | Bump @humanfs/node from 0.16.7 to 0.16.8 | +21/-576 |
 | [#3492](https://github.com/wavetermdev/waveterm/pull/3492) | Bump @xmldom/xmldom from 0.8.13 to 0.8.15 | +3/-572 |
@@ -139,7 +146,6 @@ evaluated for integration into the fork via the `.patch` strategy.
 | [#3489](https://github.com/wavetermdev/waveterm/pull/3489) | Bump browserslist from 4.28.1 to 4.28.8 | +31/-594 |
 | [#3488](https://github.com/wavetermdev/waveterm/pull/3488) | Bump google.golang.org/grpc from 1.82.1 to 1.83.1 | +22/-22 |
 | [#3487](https://github.com/wavetermdev/waveterm/pull/3487) | Bump postcss-selector-parser | +48/-617 |
-| [#3474](https://github.com/wavetermdev/waveterm/pull/3474) | Bump js-yaml from 3.14.1 to 3.15.1 | +16/-6 |
 | [#3473](https://github.com/wavetermdev/waveterm/pull/3473) | Bump nanoid from 3.3.11 to 3.3.18 | +3/-3 |
 | [#3470](https://github.com/wavetermdev/waveterm/pull/3470) | Bump brace-expansion | +22/-22 |
 | [#3468](https://github.com/wavetermdev/waveterm/pull/3468) | Bump mermaid from 11.15.0 to 11.16.1 | +27/-27 |
@@ -154,7 +160,6 @@ evaluated for integration into the fork via the `.patch` strategy.
 | [#3389](https://github.com/wavetermdev/waveterm/pull/3389) | Bump github.com/invopop/jsonschema from 0.13.0 to 0.14.0 | +9/-19 |
 | [#3388](https://github.com/wavetermdev/waveterm/pull/3388) | Bump actions/checkout from 6 to 7 in /.github/workflows | +10/-10 |
 | [#3379](https://github.com/wavetermdev/waveterm/pull/3379) | Bump vite from 6.4.2 to 6.4.3 | +7/-7 |
-| [#3346](https://github.com/wavetermdev/waveterm/pull/3346) | Bump vitest and @vitest/coverage-istanbul | +256/-453 |
 | [#3341](https://github.com/wavetermdev/waveterm/pull/3341) | Bump github.com/junegunn/fzf from 0.65.2 to 0.73.1 | +9/-7 |
 | [#3326](https://github.com/wavetermdev/waveterm/pull/3326) | Bump the react-major group across 1 directory with 4 updates | +34/-96 |
 | [#3302](https://github.com/wavetermdev/waveterm/pull/3302) | Bump @babel/plugin-transform-modules-systemjs from 7.27.1 to 7.29.7 | +63/-63 |
@@ -194,7 +199,6 @@ Files that appear in multiple PRs — integrating one may complicate integrating
 | `docs/docs/config.mdx` | [#2835](https://github.com/wavetermdev/waveterm/pull/2835), [#3293](https://github.com/wavetermdev/waveterm/pull/3293), [#3407](https://github.com/wavetermdev/waveterm/pull/3407), [#3440](https://github.com/wavetermdev/waveterm/pull/3440), [#3457](https://github.com/wavetermdev/waveterm/pull/3457) |
 | `frontend/app/modals/modalregistry.tsx` **(patched)** | [#2678](https://github.com/wavetermdev/waveterm/pull/2678), [#3263](https://github.com/wavetermdev/waveterm/pull/3263), [#3293](https://github.com/wavetermdev/waveterm/pull/3293), [#3331](https://github.com/wavetermdev/waveterm/pull/3331), [#3443](https://github.com/wavetermdev/waveterm/pull/3443) |
 | `frontend/app/tab/tabbar.tsx` | [#2678](https://github.com/wavetermdev/waveterm/pull/2678), [#2789](https://github.com/wavetermdev/waveterm/pull/2789), [#3263](https://github.com/wavetermdev/waveterm/pull/3263), [#3331](https://github.com/wavetermdev/waveterm/pull/3331), [#3353](https://github.com/wavetermdev/waveterm/pull/3353) |
-| `frontend/app/view/preview/preview-directory.tsx` **(patched)** | [#3220](https://github.com/wavetermdev/waveterm/pull/3220), [#3343](https://github.com/wavetermdev/waveterm/pull/3343), [#3399](https://github.com/wavetermdev/waveterm/pull/3399), [#3440](https://github.com/wavetermdev/waveterm/pull/3440), [#3443](https://github.com/wavetermdev/waveterm/pull/3443) |
 | `frontend/app/view/term/osc-handlers.ts` | [#2858](https://github.com/wavetermdev/waveterm/pull/2858), [#3004](https://github.com/wavetermdev/waveterm/pull/3004), [#3205](https://github.com/wavetermdev/waveterm/pull/3205), [#3275](https://github.com/wavetermdev/waveterm/pull/3275), [#3399](https://github.com/wavetermdev/waveterm/pull/3399) |
 | `pkg/blockcontroller/shellcontroller.go` | [#2763](https://github.com/wavetermdev/waveterm/pull/2763), [#2835](https://github.com/wavetermdev/waveterm/pull/2835), [#2940](https://github.com/wavetermdev/waveterm/pull/2940), [#3058](https://github.com/wavetermdev/waveterm/pull/3058), [#3275](https://github.com/wavetermdev/waveterm/pull/3275) |
 | `pkg/shellexec/shellexec.go` **(patched)** | [#2940](https://github.com/wavetermdev/waveterm/pull/2940), [#3152](https://github.com/wavetermdev/waveterm/pull/3152), [#3182](https://github.com/wavetermdev/waveterm/pull/3182), [#3402](https://github.com/wavetermdev/waveterm/pull/3402), [#3421](https://github.com/wavetermdev/waveterm/pull/3421) |
@@ -207,10 +211,12 @@ Files that appear in multiple PRs — integrating one may complicate integrating
 | `frontend/app/tab/tab.scss` | [#2789](https://github.com/wavetermdev/waveterm/pull/2789), [#2835](https://github.com/wavetermdev/waveterm/pull/2835), [#3220](https://github.com/wavetermdev/waveterm/pull/3220), [#3353](https://github.com/wavetermdev/waveterm/pull/3353) |
 | `frontend/app/tab/tab.tsx` | [#2789](https://github.com/wavetermdev/waveterm/pull/2789), [#2835](https://github.com/wavetermdev/waveterm/pull/2835), [#3312](https://github.com/wavetermdev/waveterm/pull/3312), [#3353](https://github.com/wavetermdev/waveterm/pull/3353) |
 | `frontend/app/tab/tabcontextmenu.ts` | [#3184](https://github.com/wavetermdev/waveterm/pull/3184), [#3263](https://github.com/wavetermdev/waveterm/pull/3263), [#3312](https://github.com/wavetermdev/waveterm/pull/3312), [#3353](https://github.com/wavetermdev/waveterm/pull/3353) |
+| `frontend/app/view/preview/preview-directory.tsx` **(patched)** | [#3220](https://github.com/wavetermdev/waveterm/pull/3220), [#3399](https://github.com/wavetermdev/waveterm/pull/3399), [#3440](https://github.com/wavetermdev/waveterm/pull/3440), [#3443](https://github.com/wavetermdev/waveterm/pull/3443) |
 | `frontend/app/view/preview/preview-edit.tsx` **(patched)** | [#2461](https://github.com/wavetermdev/waveterm/pull/2461), [#3312](https://github.com/wavetermdev/waveterm/pull/3312), [#3399](https://github.com/wavetermdev/waveterm/pull/3399), [#3443](https://github.com/wavetermdev/waveterm/pull/3443) |
 | `frontend/app/view/preview/preview-model.tsx` **(patched)** | [#2763](https://github.com/wavetermdev/waveterm/pull/2763), [#3235](https://github.com/wavetermdev/waveterm/pull/3235), [#3399](https://github.com/wavetermdev/waveterm/pull/3399), [#3443](https://github.com/wavetermdev/waveterm/pull/3443) |
 | `frontend/app/view/webview/webview.tsx` **(patched)** | [#3220](https://github.com/wavetermdev/waveterm/pull/3220), [#3275](https://github.com/wavetermdev/waveterm/pull/3275), [#3358](https://github.com/wavetermdev/waveterm/pull/3358), [#3420](https://github.com/wavetermdev/waveterm/pull/3420) |
 | `frontend/app/workspace/widgets.tsx` | [#2789](https://github.com/wavetermdev/waveterm/pull/2789), [#3220](https://github.com/wavetermdev/waveterm/pull/3220), [#3312](https://github.com/wavetermdev/waveterm/pull/3312), [#3399](https://github.com/wavetermdev/waveterm/pull/3399) |
+| `frontend/preview/mock/mockwaveenv.ts` | [#3066](https://github.com/wavetermdev/waveterm/pull/3066), [#3205](https://github.com/wavetermdev/waveterm/pull/3205), [#3293](https://github.com/wavetermdev/waveterm/pull/3293), [#3507](https://github.com/wavetermdev/waveterm/pull/3507) |
 | `pkg/waveobj/wtype.go` | [#2763](https://github.com/wavetermdev/waveterm/pull/2763), [#2940](https://github.com/wavetermdev/waveterm/pull/2940), [#3263](https://github.com/wavetermdev/waveterm/pull/3263), [#3312](https://github.com/wavetermdev/waveterm/pull/3312) |
 | `pkg/wconfig/defaultconfig/widgets.json` | [#2763](https://github.com/wavetermdev/waveterm/pull/2763), [#3220](https://github.com/wavetermdev/waveterm/pull/3220), [#3312](https://github.com/wavetermdev/waveterm/pull/3312), [#3399](https://github.com/wavetermdev/waveterm/pull/3399) |
 | `pkg/wcore/workspace.go` | [#2681](https://github.com/wavetermdev/waveterm/pull/2681), [#2763](https://github.com/wavetermdev/waveterm/pull/2763), [#3117](https://github.com/wavetermdev/waveterm/pull/3117), [#3312](https://github.com/wavetermdev/waveterm/pull/3312) |
@@ -222,9 +228,9 @@ Files that appear in multiple PRs — integrating one may complicate integrating
 | `frontend/app/block/blockframe-header.tsx` | [#3184](https://github.com/wavetermdev/waveterm/pull/3184), [#3235](https://github.com/wavetermdev/waveterm/pull/3235), [#3484](https://github.com/wavetermdev/waveterm/pull/3484) |
 | `frontend/app/store/services.ts` | [#2763](https://github.com/wavetermdev/waveterm/pull/2763), [#2789](https://github.com/wavetermdev/waveterm/pull/2789), [#3263](https://github.com/wavetermdev/waveterm/pull/3263) |
 | `frontend/app/tab/vtabbar.tsx` | [#3312](https://github.com/wavetermdev/waveterm/pull/3312), [#3331](https://github.com/wavetermdev/waveterm/pull/3331), [#3353](https://github.com/wavetermdev/waveterm/pull/3353) |
+| `frontend/app/theme.scss` | [#2238](https://github.com/wavetermdev/waveterm/pull/2238), [#3220](https://github.com/wavetermdev/waveterm/pull/3220), [#3507](https://github.com/wavetermdev/waveterm/pull/3507) |
 | `frontend/app/view/codeeditor/codeeditor.tsx` | [#2461](https://github.com/wavetermdev/waveterm/pull/2461), [#3220](https://github.com/wavetermdev/waveterm/pull/3220), [#3312](https://github.com/wavetermdev/waveterm/pull/3312) |
 | `frontend/app/view/preview/preview.tsx` | [#3066](https://github.com/wavetermdev/waveterm/pull/3066), [#3235](https://github.com/wavetermdev/waveterm/pull/3235), [#3399](https://github.com/wavetermdev/waveterm/pull/3399) |
-| `frontend/preview/mock/mockwaveenv.ts` | [#3066](https://github.com/wavetermdev/waveterm/pull/3066), [#3205](https://github.com/wavetermdev/waveterm/pull/3205), [#3293](https://github.com/wavetermdev/waveterm/pull/3293) |
 | `frontend/tailwindsetup.css` | [#3220](https://github.com/wavetermdev/waveterm/pull/3220), [#3293](https://github.com/wavetermdev/waveterm/pull/3293), [#3312](https://github.com/wavetermdev/waveterm/pull/3312) |
 | `frontend/types/waveevent.d.ts` | [#3275](https://github.com/wavetermdev/waveterm/pull/3275), [#3293](https://github.com/wavetermdev/waveterm/pull/3293), [#3479](https://github.com/wavetermdev/waveterm/pull/3479) |
 | `frontend/wave.ts` | [#2789](https://github.com/wavetermdev/waveterm/pull/2789), [#3220](https://github.com/wavetermdev/waveterm/pull/3220), [#3480](https://github.com/wavetermdev/waveterm/pull/3480) |
@@ -242,7 +248,7 @@ Files that appear in multiple PRs — integrating one may complicate integrating
 | `frontend/app/block/block.tsx` **(patched)** | [#3399](https://github.com/wavetermdev/waveterm/pull/3399), [#3429](https://github.com/wavetermdev/waveterm/pull/3429) |
 | `frontend/app/store/global-atoms.ts` | [#3205](https://github.com/wavetermdev/waveterm/pull/3205), [#3275](https://github.com/wavetermdev/waveterm/pull/3275) |
 | `frontend/app/tab/tabbar.scss` | [#2789](https://github.com/wavetermdev/waveterm/pull/2789), [#3220](https://github.com/wavetermdev/waveterm/pull/3220) |
-| `frontend/app/theme.scss` | [#2238](https://github.com/wavetermdev/waveterm/pull/2238), [#3220](https://github.com/wavetermdev/waveterm/pull/3220) |
+| `frontend/app/view/sysinfo/sysinfo.tsx` | [#2238](https://github.com/wavetermdev/waveterm/pull/2238), [#3507](https://github.com/wavetermdev/waveterm/pull/3507) |
 | `frontend/app/view/term/termutil.ts` | [#2461](https://github.com/wavetermdev/waveterm/pull/2461), [#3220](https://github.com/wavetermdev/waveterm/pull/3220) |
 | `frontend/app/view/term/termwrap.test.ts` | [#2940](https://github.com/wavetermdev/waveterm/pull/2940), [#3331](https://github.com/wavetermdev/waveterm/pull/3331) |
 | `frontend/app/view/waveconfig/waveconfig-model.ts` | [#2789](https://github.com/wavetermdev/waveterm/pull/2789), [#3480](https://github.com/wavetermdev/waveterm/pull/3480) |
@@ -259,4 +265,6 @@ Files that appear in multiple PRs — integrating one may complicate integrating
 | `pkg/util/shellutil/shellintegration/zsh_zshrc.sh` | [#3004](https://github.com/wavetermdev/waveterm/pull/3004), [#3016](https://github.com/wavetermdev/waveterm/pull/3016) |
 | `pkg/util/shellutil/shellutil.go` | [#2406](https://github.com/wavetermdev/waveterm/pull/2406), [#3016](https://github.com/wavetermdev/waveterm/pull/3016) |
 | `pkg/wavebase/wavebase.go` | [#2406](https://github.com/wavetermdev/waveterm/pull/2406), [#3404](https://github.com/wavetermdev/waveterm/pull/3404) |
+| `pkg/wshrpc/wshremote/sysinfo.go` | [#2238](https://github.com/wavetermdev/waveterm/pull/2238), [#3507](https://github.com/wavetermdev/waveterm/pull/3507) |
+| `pkg/wshrpc/wshremote/sysinfo_test.go` | [#2238](https://github.com/wavetermdev/waveterm/pull/2238), [#3507](https://github.com/wavetermdev/waveterm/pull/3507) |
 | `schema/widgets.json` | [#3220](https://github.com/wavetermdev/waveterm/pull/3220), [#3408](https://github.com/wavetermdev/waveterm/pull/3408) |
