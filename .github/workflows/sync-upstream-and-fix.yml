@@ -42,16 +42,26 @@ env:
     frontend/app/view/preview/preview-edit.tsx
     frontend/app/view/preview/preview-markdown.tsx
     frontend/app/view/preview/preview-model.tsx
+    frontend/app/element/markdown-anchor.test.ts
+    frontend/app/element/markdown-anchor.ts
+    frontend/app/store/bookmarksmodel.test.ts
+    frontend/app/store/bookmarksmodel.ts
+    frontend/app/view/preview/bookmarks-edit-modal.tsx
+    frontend/app/view/preview/bookmarks-menu.test.ts
+    frontend/app/view/preview/bookmarks-menu.ts
     frontend/preview/mock/defaultconfig.ts
     frontend/types/gotypes.d.ts
     docs/docs/connections.mdx
     schema/connections.json
     pkg/wconfig/settingsconfig.go
+    pkg/wconfig/defaultconfig/filebookmarks.json
+    pkg/wconfig/filebookmarks_test.go
     pkg/wshrpc/wshclient/wshclient.go
     pkg/wshrpc/wshrpctypes.go
     pkg/wshrpc/wshserver/wshserver.go
     pkg/remote/conncontroller/conncontroller.go
     pkg/remote/sshclient.go
+    pkg/remote/sshsigners.go
     pkg/shellexec/shellexec.go
     cmd/test-streammanager/main-test-streammanager.go
     pkg/jobcontroller/jobcontroller.go
@@ -124,6 +134,13 @@ jobs:
         run: |
           MERGE_REF="${{ steps.upstream-ref.outputs.merge_ref }}"
           UPSTREAM_SHA=$(git rev-parse "refs/tags/$MERGE_REF" 2>/dev/null || git rev-parse "$MERGE_REF")
+          while IFS= read -r file; do
+            [[ -z "$file" ]] && continue
+            if ! git cat-file -e "$UPSTREAM_SHA:$file" 2>/dev/null; then
+              git rm -f --ignore-unmatch -- "$file"
+              rm -f -- "$file"
+            fi
+          done <<< "$PATCHED_FILES"
           .github/scripts/revert_patched_files.sh "$UPSTREAM_SHA" "$MERGE_REF"
 
       - name: Merge upstream into main
@@ -248,6 +265,13 @@ jobs:
         run: |
           MERGE_REF="${{ steps.upstream-ref.outputs.merge_ref }}"
           UPSTREAM_SHA=$(git rev-parse "$MERGE_REF")
+          while IFS= read -r file; do
+            [[ -z "$file" ]] && continue
+            if ! git cat-file -e "$UPSTREAM_SHA:$file" 2>/dev/null; then
+              git rm -f --ignore-unmatch -- "$file"
+              rm -f -- "$file"
+            fi
+          done <<< "$PATCHED_FILES"
           .github/scripts/revert_patched_files.sh "$UPSTREAM_SHA" "$MERGE_REF"
 
       - name: Merge upstream into dev.patch

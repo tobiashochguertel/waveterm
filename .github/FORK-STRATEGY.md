@@ -40,7 +40,7 @@ Actual changes to upstream source files. These are the only things that risk
 merge conflicts. Each patch has:
 
 1. **A `.patch` file** in `.github/patches/` (named `NNN-description.patch`)
-2. **An entry in `PATCHED_FILES`** in the sync workflow env var (modified files only — new files don't need listing)
+2. **An entry in `PATCHED_FILES`** in the sync workflow env var (including new files, so they can be removed before merge when absent upstream)
 3. **An entry in `ALREADY_INTEGRATED`** in `.github/scripts/generate_upstream_prs.py` (for the PR catalog)
 
 Patches are applied by `.github/scripts/apply_patches.sh`, which loops over
