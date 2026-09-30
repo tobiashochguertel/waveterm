@@ -161,11 +161,10 @@ git apply --reverse --check .github/patches/NNN-description.patch
 .github/scripts/apply_patches.sh
 ```
 
-### 3. Add modified files to `PATCHED_FILES`
+### 3. Add all patched files to `PATCHED_FILES`
 
-In `.github/workflows/sync-upstream-and-fix.yml`, add each **modified** file
-(not new files — those don't exist in upstream and don't need reverting) to
-the `PATCHED_FILES` env var:
+In `.github/workflows/sync-upstream-and-fix.yml`, add every file touched by the
+patch, including newly created files, to the `PATCHED_FILES` env var:
 
 ```yaml
 env:
@@ -173,7 +172,7 @@ env:
     frontend/app/view/term/term.tsx
     frontend/app/view/webview/webview.tsx
     ...
-    path/to/new/modified/file.tsx   # ← add here
+    path/to/new/file.tsx             # ← add here, including new files
 ```
 
 ### 4. Register the PR in the catalog
@@ -211,6 +210,6 @@ git push origin dev.patch
 - **Never use `--strategy-option=theirs`** — it silently drops changes
 - **Keep patches minimal** — one logical change per `.patch` file
 - **Name patches with zero-padded numbers** — `NNN-description.patch` (applied in alphabetical order)
-- **Only list modified files in `PATCHED_FILES`** — new files don't need reverting
+- **List every patched file in `PATCHED_FILES`** — including newly created files
 - **Test locally** before pushing: `git apply --check`, `npm run build:dev`, `go build ./pkg/...`
 - **Verify idempotency** — `git apply --reverse --check` must pass (so `apply_patches.sh` can detect already-applied patches)
