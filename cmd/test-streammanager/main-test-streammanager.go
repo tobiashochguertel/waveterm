@@ -209,9 +209,8 @@ type BrokerDataSender struct {
 	broker *streamclient.Broker
 }
 
-func (s *BrokerDataSender) SendData(dataPk wshrpc.CommandStreamData) error {
+func (s *BrokerDataSender) SendData(dataPk wshrpc.CommandStreamData) {
 	s.broker.SendData(dataPk)
-	return nil
 }
 
 // MetricsWriter wraps an io.Writer and records bytes written to metrics

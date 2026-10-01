@@ -105,9 +105,6 @@
         "ssh:identityagent": {
           "type": "string"
         },
-        "ssh:forwardagent": {
-          "type": "boolean"
-        },
         "ssh:identitiesonly": {
           "type": "boolean"
         },

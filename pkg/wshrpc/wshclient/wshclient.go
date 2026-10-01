@@ -215,12 +215,6 @@ func DeleteBuilderCommand(w *wshutil.WshRpc, data string, opts *wshrpc.RpcOpts) 
 	return err
 }
 
-// command "deletefilebookmark", wshserver.DeleteFileBookmarkCommand
-func DeleteFileBookmarkCommand(w *wshutil.WshRpc, data string, opts *wshrpc.RpcOpts) error {
-	_, err := sendRpcRequestCallHelper[any](w, "deletefilebookmark", data, opts)
-	return err
-}
-
 // command "deletesubblock", wshserver.DeleteSubBlockCommand
 func DeleteSubBlockCommand(w *wshutil.WshRpc, data wshrpc.CommandDeleteBlockData, opts *wshrpc.RpcOpts) error {
 	_, err := sendRpcRequestCallHelper[any](w, "deletesubblock", data, opts)
@@ -854,12 +848,6 @@ func SetConnectionsConfigCommand(w *wshutil.WshRpc, data wshrpc.ConnConfigReques
 	return err
 }
 
-// command "setfilebookmark", wshserver.SetFileBookmarkCommand
-func SetFileBookmarkCommand(w *wshutil.WshRpc, data wshrpc.FileBookmarkSetRequest, opts *wshrpc.RpcOpts) error {
-	_, err := sendRpcRequestCallHelper[any](w, "setfilebookmark", data, opts)
-	return err
-}
-
 // command "setmeta", wshserver.SetMetaCommand
 func SetMetaCommand(w *wshutil.WshRpc, data wshrpc.CommandSetMetaData, opts *wshrpc.RpcOpts) error {
 	_, err := sendRpcRequestCallHelper[any](w, "setmeta", data, opts)
@@ -1033,6 +1021,12 @@ func WebSelectorCommand(w *wshutil.WshRpc, data wshrpc.CommandWebSelectorData, o
 // command "workspacelist", wshserver.WorkspaceListCommand
 func WorkspaceListCommand(w *wshutil.WshRpc, opts *wshrpc.RpcOpts) ([]wshrpc.WorkspaceInfoData, error) {
 	resp, err := sendRpcRequestCallHelper[[]wshrpc.WorkspaceInfoData](w, "workspacelist", nil, opts)
+	return resp, err
+}
+
+// command "workspacelistall", wshserver.WorkspaceListAllCommand
+func WorkspaceListAllCommand(w *wshutil.WshRpc, opts *wshrpc.RpcOpts) ([]wshrpc.WorkspaceInfoData, error) {
+	resp, err := sendRpcRequestCallHelper[[]wshrpc.WorkspaceInfoData](w, "workspacelistall", nil, opts)
 	return resp, err
 }
 

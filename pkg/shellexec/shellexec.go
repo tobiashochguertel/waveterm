@@ -32,8 +32,6 @@ import (
 	"github.com/wavetermdev/waveterm/pkg/wshrpc/wshclient"
 	"github.com/wavetermdev/waveterm/pkg/wshutil"
 	"github.com/wavetermdev/waveterm/pkg/wslconn"
-	"golang.org/x/crypto/ssh"
-	"golang.org/x/crypto/ssh/agent"
 )
 
 const DefaultGracefulKillWait = 400 * time.Millisecond
@@ -293,16 +291,6 @@ func StartWslShellProc(ctx context.Context, termSize waveobj.TermSize, cmdStr st
 	return &ShellProc{Cmd: cmdWrap, ConnName: conn.GetName(), CloseOnce: &sync.Once{}, DoneCh: make(chan any)}, nil
 }
 
-// forwarding failures are non-fatal; the shell still starts, just without the agent socket
-func requestAgentForwardingIfEnabled(ctx context.Context, conn *conncontroller.SSHConn, session *ssh.Session) {
-	if !conn.GetForwardAgent() {
-		return
-	}
-	if err := agent.RequestAgentForwarding(session); err != nil {
-		conn.Infof(ctx, "error requesting agent forwarding: %v\n", err)
-	}
-}
-
 func StartRemoteShellProcNoWsh(ctx context.Context, termSize waveobj.TermSize, cmdStr string, cmdOpts CommandOptsType, conn *conncontroller.SSHConn) (*ShellProc, error) {
 	client := conn.GetClient()
 	conn.Infof(ctx, "SSH-NEWSESSION (StartRemoteShellProcNoWsh)")
@@ -337,7 +325,6 @@ func StartRemoteShellProcNoWsh(ctx context.Context, termSize waveobj.TermSize, c
 	session.Stderr = remoteStdoutWrite
 
 	session.RequestPty("xterm-256color", termSize.Rows, termSize.Cols, nil)
-	requestAgentForwardingIfEnabled(ctx, conn, session)
 	sessionWrap := MakeSessionWrap(session, "", pipePty)
 	err = session.Shell()
 	if err != nil {
@@ -473,7 +460,6 @@ func StartRemoteShellProc(ctx context.Context, logCtx context.Context, termSize 
 	}
 	shellutil.AddTokenSwapEntry(cmdOpts.SwapToken)
 	session.RequestPty("xterm-256color", termSize.Rows, termSize.Cols, nil)
-	requestAgentForwardingIfEnabled(logCtx, conn, session)
 	sessionWrap := MakeSessionWrap(session, cmdCombined, pipePty)
 	err = sessionWrap.Start()
 	if err != nil {

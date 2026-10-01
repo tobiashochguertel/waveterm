@@ -41,15 +41,13 @@ type routedDataSender struct {
 	route  string
 }
 
-func (rds *routedDataSender) SendData(dataPk wshrpc.CommandStreamData) error {
+func (rds *routedDataSender) SendData(dataPk wshrpc.CommandStreamData) {
 	// log.Printf("SendData: sending seq=%d, len=%d, eof=%t, error=%s, route=%s",
 	// 	dataPk.Seq, len(dataPk.Data64), dataPk.Eof, dataPk.Error, rds.route)
 	err := wshclient.StreamDataCommand(rds.wshRpc, dataPk, &wshrpc.RpcOpts{NoResponse: true, Route: rds.route})
 	if err != nil {
 		log.Printf("SendData: error sending stream data: %v\n", err)
-		return err
 	}
-	return nil
 }
 
 func (msc *MainServerConn) authenticateSelfToServer(jobAuthToken string) error {

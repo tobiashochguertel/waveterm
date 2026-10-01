@@ -559,20 +559,6 @@ func (ws *WshServer) SetConnectionsConfigCommand(ctx context.Context, data wshrp
 	return wconfig.SetConnectionsConfigValue(data.Host, data.MetaMapType)
 }
 
-func (ws *WshServer) SetFileBookmarkCommand(ctx context.Context, data wshrpc.FileBookmarkSetRequest) error {
-	if data.Key == "" {
-		return fmt.Errorf("key is required")
-	}
-	return wconfig.SetFileBookmarkConfigValue(data.Key, data.Bookmark)
-}
-
-func (ws *WshServer) DeleteFileBookmarkCommand(ctx context.Context, key string) error {
-	if key == "" {
-		return fmt.Errorf("key is required")
-	}
-	return wconfig.DeleteFileBookmarkConfigValue(key)
-}
-
 func (ws *WshServer) GetFullConfigCommand(ctx context.Context) (wconfig.FullConfigType, error) {
 	watcher := wconfig.GetWatcher()
 	return watcher.GetFullConfig(), nil
@@ -959,7 +945,29 @@ func (ws *WshServer) BlocksListCommand(
 }
 
 func (ws *WshServer) WorkspaceListCommand(ctx context.Context) ([]wshrpc.WorkspaceInfoData, error) {
-	workspaceList, err := wcore.ListWorkspaces(ctx)
+	return workspaceListInternal(ctx, false)
+}
+
+// WorkspaceListAllCommand is the CLI-only counterpart backing wsh workspace
+// list / wsh blocks list: it includes unsaved (scratch) workspaces too,
+// since CLI tooling needs visibility into every live workspace's tabs and
+// blocks regardless of whether the user has named it. WorkspaceListCommand
+// itself is also called from emain (Electron Workspace menu, Alt+Ctrl+N
+// workspace switching), which relies on unsaved workspaces staying
+// excluded there to avoid blank menu entries and shortcut slots - so it
+// must keep its original behavior unchanged.
+func (ws *WshServer) WorkspaceListAllCommand(ctx context.Context) ([]wshrpc.WorkspaceInfoData, error) {
+	return workspaceListInternal(ctx, true)
+}
+
+func workspaceListInternal(ctx context.Context, includeUnsaved bool) ([]wshrpc.WorkspaceInfoData, error) {
+	var workspaceList waveobj.WorkspaceList
+	var err error
+	if includeUnsaved {
+		workspaceList, err = wcore.ListAllWorkspaces(ctx)
+	} else {
+		workspaceList, err = wcore.ListWorkspaces(ctx)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("error listing workspaces: %w", err)
 	}

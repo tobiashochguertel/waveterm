@@ -216,12 +216,6 @@ export class RpcApiType {
         return client.wshRpcCall("deletebuilder", data, opts);
     }
 
-    // command "deletefilebookmark" [call]
-    DeleteFileBookmarkCommand(client: WshClient, data: string, opts?: RpcOpts): Promise<void> {
-        if (this.mockClient) return this.mockClient.mockWshRpcCall(client, "deletefilebookmark", data, opts);
-        return client.wshRpcCall("deletefilebookmark", data, opts);
-    }
-
     // command "deletesubblock" [call]
     DeleteSubBlockCommand(client: WshClient, data: CommandDeleteBlockData, opts?: RpcOpts): Promise<void> {
         if (this.mockClient) return this.mockClient.mockWshRpcCall(client, "deletesubblock", data, opts);
@@ -858,12 +852,6 @@ export class RpcApiType {
         return client.wshRpcCall("setconnectionsconfig", data, opts);
     }
 
-    // command "setfilebookmark" [call]
-    SetFileBookmarkCommand(client: WshClient, data: FileBookmarkSetRequest, opts?: RpcOpts): Promise<void> {
-        if (this.mockClient) return this.mockClient.mockWshRpcCall(client, "setfilebookmark", data, opts);
-        return client.wshRpcCall("setfilebookmark", data, opts);
-    }
-
     // command "setmeta" [call]
     SetMetaCommand(client: WshClient, data: CommandSetMetaData, opts?: RpcOpts): Promise<void> {
         if (this.mockClient) return this.mockClient.mockWshRpcCall(client, "setmeta", data, opts);
@@ -1042,6 +1030,12 @@ export class RpcApiType {
     WorkspaceListCommand(client: WshClient, opts?: RpcOpts): Promise<WorkspaceInfoData[]> {
         if (this.mockClient) return this.mockClient.mockWshRpcCall(client, "workspacelist", null, opts);
         return client.wshRpcCall("workspacelist", null, opts);
+    }
+
+    // command "workspacelistall" [call]
+    WorkspaceListAllCommand(client: WshClient, opts?: RpcOpts): Promise<WorkspaceInfoData[]> {
+        if (this.mockClient) return this.mockClient.mockWshRpcCall(client, "workspacelistall", null, opts);
+        return client.wshRpcCall("workspacelistall", null, opts);
     }
 
     // command "writeappfile" [call]

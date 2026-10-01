@@ -76,8 +76,6 @@ type WshRpcInterface interface {
 	TestMultiArgCommand(ctx context.Context, arg1 string, arg2 int, arg3 bool) (string, error)
 	SetConfigCommand(ctx context.Context, data MetaSettingsType) error
 	SetConnectionsConfigCommand(ctx context.Context, data ConnConfigRequest) error
-	SetFileBookmarkCommand(ctx context.Context, data FileBookmarkSetRequest) error
-	DeleteFileBookmarkCommand(ctx context.Context, key string) error
 	GetFullConfigCommand(ctx context.Context) (wconfig.FullConfigType, error)
 	GetWaveAIModeConfigCommand(ctx context.Context) (wconfig.AIModeConfigUpdate, error)
 	BlockInfoCommand(ctx context.Context, blockId string) (*BlockInfoData, error)
@@ -148,6 +146,13 @@ type WshRpcInterface interface {
 	GetSecretsLinuxStorageBackendCommand(ctx context.Context) (string, error)
 
 	WorkspaceListCommand(ctx context.Context) ([]WorkspaceInfoData, error)
+	// WorkspaceListAllCommand is the CLI-only counterpart to
+	// WorkspaceListCommand: it includes unsaved (scratch) workspaces too.
+	// WorkspaceListCommand itself must keep excluding them - it's also
+	// called from emain (Electron Workspace menu, Alt+Ctrl+N workspace
+	// switching), which relies on that filtering to avoid blank menu
+	// entries and shortcut slots for scratch workspaces.
+	WorkspaceListAllCommand(ctx context.Context) ([]WorkspaceInfoData, error)
 	GetUpdateChannelCommand(ctx context.Context) (string, error)
 
 	// terminal
@@ -413,11 +418,6 @@ func (m MetaSettingsType) MarshalJSON() ([]byte, error) {
 type ConnConfigRequest struct {
 	Host        string              `json:"host"`
 	MetaMapType waveobj.MetaMapType `json:"metamaptype"`
-}
-
-type FileBookmarkSetRequest struct {
-	Key      string               `json:"key"`
-	Bookmark wconfig.FileBookmark `json:"bookmark"`
 }
 
 type ConnStatus struct {

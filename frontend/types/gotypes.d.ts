@@ -850,7 +850,6 @@ declare global {
         "ssh:preferredauthentications"?: string[];
         "ssh:addkeystoagent"?: boolean;
         "ssh:identityagent"?: string;
-        "ssh:forwardagent"?: boolean;
         "ssh:identitiesonly"?: boolean;
         "ssh:proxyjump"?: string[];
         "ssh:userknownhostsfile"?: string[];
@@ -923,23 +922,6 @@ declare global {
     type FetchSuggestionsResponse = {
         reqnum: number;
         suggestions: SuggestionType[];
-    };
-
-    // wconfig.FileBookmark
-    type FileBookmark = {
-        "display:order"?: number;
-        bookmarktype: string;
-        label: string;
-        path: string;
-        connection?: string;
-        anchor?: string;
-        line?: number;
-    };
-
-    // wshrpc.FileBookmarkSetRequest
-    type FileBookmarkSetRequest = {
-        key: string;
-        bookmark: FileBookmark;
     };
 
     // wshrpc.FileCopyOpts
@@ -1036,7 +1018,6 @@ declare global {
         termthemes: {[key: string]: TermThemeType};
         connections: {[key: string]: ConnKeywords};
         bookmarks: {[key: string]: WebBookmark};
-        filebookmarks: {[key: string]: FileBookmark};
         waveai: {[key: string]: AIModeConfigType};
         configerrors: ConfigError[];
         version: string;
@@ -1608,7 +1589,6 @@ declare global {
         "debug:panictype"?: string;
         "block:view"?: string;
         "block:controller"?: string;
-        "block:subblock"?: boolean;
         "ai:backendtype"?: string;
         "ai:local"?: boolean;
         "wsh:cmd"?: string;
