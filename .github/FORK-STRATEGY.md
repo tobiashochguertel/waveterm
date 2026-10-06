@@ -90,7 +90,8 @@ git merge-base --is-ancestor "$UPSTREAM_SHA" HEAD  # → nothing to do
 
 # 5. Merge upstream (normal merge, no strategy override)
 git merge "$MERGE_REF" --no-edit -m "chore: merge upstream …"
-#    If this conflicts on non-patched files → FAIL LOUDLY (merge --abort, exit 1)
+#    Conflicts only under .github/ (fork-owned) → keep the fork's version
+#    Any other conflict on non-patched files → FAIL LOUDLY (merge --abort, exit 1)
 
 # 6. Re-apply all patches via apply_patches.sh
 .github/scripts/apply_patches.sh
@@ -114,7 +115,7 @@ The revert-then-repatch approach:
 
 - **Guarantees patches are always re-applied** on the latest upstream code
 - **Fails loudly** if upstream changed the surrounding code (`git apply` fails)
-- **Fails loudly** if there are conflicts on files we don't patch
+- **Fails loudly** if there are conflicts on files we don't patch (outside fork-owned `.github/`)
 - **Never silently drops** a custom change
 
 ### Helper scripts

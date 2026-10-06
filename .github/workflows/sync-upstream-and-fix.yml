@@ -151,6 +151,26 @@ jobs:
           if git merge "$MERGE_REF" --no-edit \
             -m "chore: merge upstream $MERGE_REF into main [skip ci]"; then
             echo "merge_status=success" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          CONFLICTS=$(git diff --name-only --diff-filter=U)
+          echo "Conflicted files:"
+          echo "$CONFLICTS"
+
+          # .github/ is fork-owned (sync automation, upstream-only guards on
+          # upstream workflows), so keep the fork's side for conflicts there.
+          if [[ -n "$CONFLICTS" ]] && ! grep -qv '^\.github/' <<< "$CONFLICTS"; then
+            while IFS= read -r file; do
+              if git cat-file -e "HEAD:$file" 2>/dev/null; then
+                git checkout HEAD -- "$file"
+              else
+                git rm -q -f -- "$file"
+              fi
+              echo "Kept fork version of $file"
+            done <<< "$CONFLICTS"
+            git commit --no-edit
+            echo "merge_status=success" >> "$GITHUB_OUTPUT"
           else
             echo "❌ Merge conflict detected — cannot auto-resolve"
             git merge --abort
@@ -281,6 +301,26 @@ jobs:
           MERGE_REF="${{ steps.upstream-ref.outputs.merge_ref }}"
           if git merge "$MERGE_REF" --no-edit \
             -m "chore: merge upstream $MERGE_REF into dev.patch [skip ci]"; then
+            echo "merge_status=success" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          CONFLICTS=$(git diff --name-only --diff-filter=U)
+          echo "Conflicted files:"
+          echo "$CONFLICTS"
+
+          # .github/ is fork-owned (sync automation, upstream-only guards on
+          # upstream workflows), so keep the fork's side for conflicts there.
+          if [[ -n "$CONFLICTS" ]] && ! grep -qv '^\.github/' <<< "$CONFLICTS"; then
+            while IFS= read -r file; do
+              if git cat-file -e "HEAD:$file" 2>/dev/null; then
+                git checkout HEAD -- "$file"
+              else
+                git rm -q -f -- "$file"
+              fi
+              echo "Kept fork version of $file"
+            done <<< "$CONFLICTS"
+            git commit --no-edit
             echo "merge_status=success" >> "$GITHUB_OUTPUT"
           else
             echo "❌ Merge conflict detected — cannot auto-resolve"
