@@ -154,20 +154,23 @@ jobs:
             exit 0
           fi
 
-          CONFLICTS=$(git diff --name-only --diff-filter=U)
+          CONFLICTS=$(git status --porcelain | grep -E '^(DD|AU|UD|UA|DU|AA|UU) ' || true)
           echo "Conflicted files:"
           echo "$CONFLICTS"
 
           # .github/ is fork-owned (sync automation, upstream-only guards on
-          # upstream workflows), so keep the fork's side for conflicts there.
-          if [[ -n "$CONFLICTS" ]] && ! grep -qv '^\.github/' <<< "$CONFLICTS"; then
-            while IFS= read -r file; do
-              if git cat-file -e "HEAD:$file" 2>/dev/null; then
-                git checkout HEAD -- "$file"
+          # upstream workflows). When the only conflicts there are
+          # modify/delete (UD/DU), keep the fork's side. Content conflicts
+          # (UU etc.) still need manual resolution so upstream edits aren't lost.
+          if [[ -n "$CONFLICTS" ]] && ! grep -qvE '^(UD|DU) \.github/' <<< "$CONFLICTS"; then
+            while IFS= read -r line; do
+              file="${line:3}"
+              if [[ "${line:0:2}" == "UD" ]]; then
+                git add -- "$file"
               else
-                git rm -q -f -- "$file"
+                git rm -q -- "$file"
               fi
-              echo "Kept fork version of $file"
+              echo "Kept fork side of $file (${line:0:2})"
             done <<< "$CONFLICTS"
             git commit --no-edit
             echo "merge_status=success" >> "$GITHUB_OUTPUT"
@@ -305,20 +308,23 @@ jobs:
             exit 0
           fi
 
-          CONFLICTS=$(git diff --name-only --diff-filter=U)
+          CONFLICTS=$(git status --porcelain | grep -E '^(DD|AU|UD|UA|DU|AA|UU) ' || true)
           echo "Conflicted files:"
           echo "$CONFLICTS"
 
           # .github/ is fork-owned (sync automation, upstream-only guards on
-          # upstream workflows), so keep the fork's side for conflicts there.
-          if [[ -n "$CONFLICTS" ]] && ! grep -qv '^\.github/' <<< "$CONFLICTS"; then
-            while IFS= read -r file; do
-              if git cat-file -e "HEAD:$file" 2>/dev/null; then
-                git checkout HEAD -- "$file"
+          # upstream workflows). When the only conflicts there are
+          # modify/delete (UD/DU), keep the fork's side. Content conflicts
+          # (UU etc.) still need manual resolution so upstream edits aren't lost.
+          if [[ -n "$CONFLICTS" ]] && ! grep -qvE '^(UD|DU) \.github/' <<< "$CONFLICTS"; then
+            while IFS= read -r line; do
+              file="${line:3}"
+              if [[ "${line:0:2}" == "UD" ]]; then
+                git add -- "$file"
               else
-                git rm -q -f -- "$file"
+                git rm -q -- "$file"
               fi
-              echo "Kept fork version of $file"
+              echo "Kept fork side of $file (${line:0:2})"
             done <<< "$CONFLICTS"
             git commit --no-edit
             echo "merge_status=success" >> "$GITHUB_OUTPUT"
