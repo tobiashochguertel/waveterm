@@ -1,7 +1,7 @@
-# waveterm-genpatch — Generate `.patch` files from feature branches
+# fork-genpatch — Generate `.patch` files from feature branches
 
-**Script:** `waveterm-genpatch.py`
-**Location:** `~/work/dev/tools/pep723-scripts/waveterm-genpatch.py`
+**Script:** `fork-genpatch.py`
+**Location:** `~/work/dev/tools/pep723-scripts/fork-genpatch.py`
 **Type:** PEP 723 inline script (run with `uv run`)
 
 ---
@@ -25,32 +25,32 @@ strategy. Given a feature branch, it:
 
 ```bash
 # Generate a patch from a feature branch
-uv run waveterm-genpatch --branch feature/preview-documents \
+uv run fork-genpatch --branch feature/preview-documents \
     --output .github/patches/009-preview-document-formats.patch
 
 # Dry run (show what would be included, don't write)
-uv run waveterm-genpatch --branch feature/preview-documents --dry-run
+uv run fork-genpatch --branch feature/preview-documents --dry-run
 
 # Generate and validate (apply check + reverse check)
-uv run waveterm-genpatch --branch feature/preview-documents \
+uv run fork-genpatch --branch feature/preview-documents \
     --output .github/patches/009-preview-document-formats.patch \
     --validate
 
 # Generate, validate, and update PATCHED_FILES
-uv run waveterm-genpatch --branch feature/preview-documents \
+uv run fork-genpatch --branch feature/preview-documents \
     --output .github/patches/009-preview-document-formats.patch \
     --validate --update-patched-files
 
 # Generate, validate, update PATCHED_FILES, and commit to dev.patch
-uv run waveterm-genpatch --branch feature/preview-documents \
+uv run fork-genpatch --branch feature/preview-documents \
     --output .github/patches/009-preview-document-formats.patch \
     --validate --update-patched-files --commit
 
 # List existing patches
-uv run waveterm-genpatch --list
+uv run fork-genpatch --list
 
 # Show which files in a feature branch are modified vs new
-uv run waveterm-genpatch --branch feature/preview-documents --analyze
+uv run fork-genpatch --branch feature/preview-documents --analyze
 ```
 
 ---
@@ -75,8 +75,8 @@ uv run waveterm-genpatch --branch feature/preview-documents --analyze
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `WAVETERM_GENPATCH_REPO` | `cwd` | Path to the waveterm repo |
-| `WAVETERM_GENPATCH_BASE` | `dev.patch` | Base branch |
+| `FORK_GENPATCH_REPO` | `cwd` | Path to the waveterm repo |
+| `FORK_GENPATCH_BASE` | `dev.patch` | Base branch |
 
 ---
 
@@ -142,7 +142,7 @@ git commit -m "feat: integrate <description> via .patch"
 
 ```bash
 cd /path/to/waveterm
-uv run waveterm-genpatch --branch feature/preview-documents \
+uv run fork-genpatch --branch feature/preview-documents \
     --output .github/patches/009-preview-document-formats.patch \
     --validate --update-patched-files --commit
 ```
@@ -154,11 +154,11 @@ patches from any feature branches that have new commits:
 
 ```cron
 # Daily at 08:00 UTC — generate patches from active feature branches
-0 8 * * * cd /path/to/waveterm && uv run waveterm-genpatch \
+0 8 * * * cd /path/to/waveterm && uv run fork-genpatch \
     --branch feature/preview-documents \
     --output .github/patches/009-preview-document-formats.patch \
     --validate --update-patched-files --commit \
-    >> /var/log/waveterm-genpatch.log 2>&1
+    >> /var/log/fork-genpatch.log 2>&1
 ```
 
 ### Forgejo Actions workflow
@@ -184,7 +184,7 @@ jobs:
           python-version: '3.12'
       - run: pip install uv
       - run: |
-          uv run waveterm-genpatch \
+          uv run fork-genpatch \
             --branch feature/preview-documents \
             --output .github/patches/009-preview-document-formats.patch \
             --validate --update-patched-files --commit

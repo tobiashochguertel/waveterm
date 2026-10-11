@@ -95,8 +95,8 @@ git checkout dev.patch
 git checkout -b feature/preview-documents
 # ... develop ...
 
-# Generate patch (see waveterm-genpatch.py below)
-uv run waveterm-genpatch --branch feature/preview-documents \
+# Generate patch (see fork-genpatch.py below)
+uv run fork-genpatch --branch feature/preview-documents \
     --output .github/patches/009-preview-document-formats.patch
 
 # Test
@@ -135,7 +135,7 @@ around it because it modifies files that upstream also modifies.
 
 ## Automating `.patch` file generation
 
-A PEP 723 script `waveterm-genpatch.py` automates generating `.patch` files
+A PEP 723 script `fork-genpatch.py` automates generating `.patch` files
 from feature branches. It:
 
 1. Finds the merge base between the feature branch and `dev.patch`
@@ -145,31 +145,31 @@ from feature branches. It:
 5. Validates the patch applies cleanly and is idempotent
 6. Optionally updates `PATCHED_FILES` and `ALREADY_INTEGRATED`
 
-**Script location:** `~/work/dev/tools/pep723-scripts/waveterm-genpatch.py`
-**Docs:** [waveterm-genpatch.md](./waveterm-genpatch.md)
+**Script location:** `~/work/dev/tools/pep723-scripts/fork-genpatch.py`
+**Docs:** [fork-genpatch.md](./fork-genpatch.md)
 
 ### Usage
 
 ```bash
 # Generate a patch from a feature branch
-uv run waveterm-genpatch --branch feature/preview-documents \
+uv run fork-genpatch --branch feature/preview-documents \
     --output .github/patches/009-preview-document-formats.patch
 
 # Dry run (show what would be included, don't write)
-uv run waveterm-genpatch --branch feature/preview-documents --dry-run
+uv run fork-genpatch --branch feature/preview-documents --dry-run
 
 # Generate and validate
-uv run waveterm-genpatch --branch feature/preview-documents \
+uv run fork-genpatch --branch feature/preview-documents \
     --output .github/patches/009-preview-document-formats.patch \
     --validate
 
 # Generate, validate, and update PATCHED_FILES
-uv run waveterm-genpatch --branch feature/preview-documents \
+uv run fork-genpatch --branch feature/preview-documents \
     --output .github/patches/009-preview-document-formats.patch \
     --validate --update-patched-files
 
 # List existing patches
-uv run waveterm-genpatch --list
+uv run fork-genpatch --list
 ```
 
 ### Scheduling
@@ -178,10 +178,10 @@ The script can be run manually or scheduled via cron/Forgejo Actions:
 
 ```bash
 # Manual
-uv run waveterm-genpatch --branch feature/preview-documents --validate
+uv run fork-genpatch --branch feature/preview-documents --validate
 
 # Cron (daily at 08:00, after the upstream sync at 07:00)
-0 8 * * * cd /path/to/waveterm && uv run waveterm-genpatch \
+0 8 * * * cd /path/to/waveterm && uv run fork-genpatch \
     --branch feature/preview-documents \
     --output .github/patches/009-preview-document-formats.patch \
     --validate --commit
